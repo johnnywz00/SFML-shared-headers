@@ -1,0 +1,6 @@
+add_subdirectory(jwzhpp)
+add_subdirectory(jwzsfml)
+add_subdirectory(timedeventmanager)
+add_subdirectory(resourcemanager)
+add_subdirectory(zsprite)
+add_subdirectory(highscore)

@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <ctime>
 #include <chrono>
+#include <filesystem>
 //variant?
 
 #include <set>
@@ -58,6 +59,9 @@ using std::dynamic_pointer_cast;
 using std::chrono::duration_cast;
 using std::chrono::system_clock;
 using std::chrono::steady_clock;
+using std::filesystem::path;
+using std::filesystem::parent_path;
+using std::filesystem::current_path;
 
 
 using std::cos;
@@ -319,7 +323,8 @@ inline string ptrStr (void* ptr)
 	return ss.str();
 }
 
-inline string stripExtension (const string& fname) {
+inline string stripExtension (const string& fname) 
+{
 	size_t lastdot = fname.find_last_of(".");
 	if (lastdot == std::string::npos)
 		return fname;

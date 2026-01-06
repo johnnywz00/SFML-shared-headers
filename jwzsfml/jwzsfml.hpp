@@ -1742,7 +1742,8 @@ public:
 			unresolvedPts.pop();
 			
 			for (auto [dx, dy] : dirs) {
-				int nx = cx + dx, ny = cy + dy;
+				int nx = cx + dx;
+				int ny = cy + dy;
 				if (nx >= 0 && nx < numCols && ny >= 0 && ny < numRows && getPixel(nx, ny) == colorToReplace) {
 					func(nx, ny);
 					unresolvedPts.push({nx, ny});

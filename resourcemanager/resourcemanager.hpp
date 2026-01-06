@@ -14,7 +14,7 @@
 class Resources
 {
 public:
-	static void initialize (int arc, char* argv[])
+	static void initialize (int argc, char* argv[])
 	{
 		if (argc > 0 && argv[0]) {
 			exeDir = std::filesystem::absolute(argv[0]).parent_path();
@@ -25,9 +25,20 @@ public:
 		loadResources();
 	}
 	
-	static path executingDir () { return exeDir; }
+	static path executingDir () {
+/* This directive is for personal convenience only,
+ * having to do with XCode and my local computer setup
+ */
+#ifdef DEBUG
+		return path();
+		
+/* For cross-platform compiling, we need the absolute path */
+#else
+		return exeDir;
+#endif
+	}
 	
-	static string executingDirStr () { return exeDir.string(); }
+	static string executingDirStr () { return Resources::executingDir().string(); }
 	
 	/* Returning non-const references to resources so that
 	 * game projects can reuse this file with minimal adjustment
@@ -36,9 +47,9 @@ public:
 	 */
 	static Texture& getTex (string key) { return txMap[key]; }
 	
-	static Texture& getFont (string key) { return fontMap[key]; }
+	static Font& getFont (string key) { return fontMap[key]; }
 	
-	static Texture& getSound (string key) { return soundMap[key]; }
+	static Sound& getSound (string key) { return soundMap[key]; }
 	
 private:
 	static void loadResources ()
@@ -53,10 +64,10 @@ private:
 		SoundBuffer sb;
 			
 		/* Set up filestream */
-		path rscPath = exeDir / "resources";
+		path rscPath = Resources::executingDir() / "resources";
 		ifstream rscData {rscPath / "resources.txt"};
 		if (!rscData.is_open()) {
-			cerr << "Couldn't load " + fname + ". \n";
+			cerr << "Couldn't load resources.txt \n";
 			return;
 		}
 		string line;
@@ -136,31 +147,6 @@ private:
 	
 	static inline vector<SoundBuffer> buffers;
 	
-	
-	
-	/*
-	 inline std::filesystem::path executingDir (int argc, char* argv[])
-	 {
-		 std::filesystem::path exePath;
-		 if (argc > 0 && argv[0]) {
-			 exePath = std::filesystem::absolute(argv[0]);
-		 }
-		 else {
-			 exePath = std::filesystem::current_path();
-		 }
-		 return exePath.parent_path();
-	 }
-
-	 // Usage in main():
-	 int main(int argc, char* argv[]) {
-		 auto exeDir = getExeDir(argc, argv);
-		 std::cout << "Exe dir: " << exeDir << std::endl;
-		 
-		 auto resPath = exeDir / "Resources" / "image.png";
-		 // sf::Texture::loadFromFile(resPath);
-	 }
-
-	 */
 };
 
 #endif /* resourcemanager_hpp */

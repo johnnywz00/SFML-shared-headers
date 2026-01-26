@@ -9,7 +9,7 @@
 #define resourcemanager_hpp
 
 #include "jwzsfml.hpp"
-
+#include <filesystem>
 
 class Resources
 {

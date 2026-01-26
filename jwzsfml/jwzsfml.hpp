@@ -555,7 +555,7 @@ struct Line
 	
 	bool yIsGreaterThan (vecf pt) const
 	{
-		return !yIsLessThan(pt);
+		return !yIsLessThan(pt);	// includes equality
 	}
 	
 	bool xIsGreaterThan (vecf pt) const
@@ -566,6 +566,7 @@ struct Line
 	bool isVertical () const
 	{
 		return std::isinf(slope);
+		// invSlope epseq 0
 	}
 	
 	bool isHorizontal () const

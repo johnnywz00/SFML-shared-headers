@@ -37,21 +37,11 @@ using namespace sf;
 #define appendCoordsC(X, Y, C) append(Vertex(Vector2f(X, Y), C))
 
 #define adjustVal(key, prop, inc, min, max) \
-	ikp(key){ \
+	ikp(key) { \
 		if (iKP(LShift)) prop = decm(prop, inc, min); \
 		else prop = incm(prop, inc, max); \
 		PAUSE1; \
 	}
-
-
-    /* These values were hardcoded into many hours of my early work,
-     * specific to the laptop screen size I had at the time. Leave them
-     * stand while this file acts as a shared header.
-     */
-constexpr int       ScrW = 1440;
-constexpr int       ScrH = 900;
-constexpr float     ScrCX = ScrW / 2;
-constexpr float     ScrCY = ScrH / 2;
 
 #define scrw SCRW()
 #define scrh SCRH()
@@ -123,7 +113,7 @@ inline void centerOrigin (Text& obj) {
 //inline void centerOn (& obj, & target)    //TEMPLATE FUNCTION
 //{
 //	auto saveOgn = obj.getOrigin();
-//	cO(obj);
+//	centerOrigin(obj);
 //	//
 //	obj.setOrigin(saveOgn);
 //}
@@ -157,23 +147,23 @@ inline vec3f mean (vec3f v1, vec3f v2)
 	return v1 + (v2 - v1) / 2.f;
 }
 
-inline float hyp (vecF& v1, vecF& v2) {
-	
+inline float hyp (vecF& v1, vecF& v2)
+{
     auto X = v2.x - v1.x;
     auto Y = v2.y - v1.y;
     return abs(sqrt(X * X + Y * Y));
 }
 
-inline float hyp (const vecF& v1, const vecF& v2) {
-	
+inline float hyp (const vecF& v1, const vecF& v2)
+{
 	auto X = v2.x - v1.x;
 	auto Y = v2.y - v1.y;
 	return abs(sqrt(X * X + Y * Y));
 }
 
 
-inline float hyp (vecF& v) {
-	
+inline float hyp (vecF& v)
+{
     return abs(sqrt( (v.x * v.x) + (v.y * v.y) ));
 }
 
@@ -196,8 +186,8 @@ inline float hyp (float x, float y, float z)
 }
 
 
-inline vecF toRect (vecF& vec) {
-	
+inline vecF toRect (vecF& vec)
+{
     vecF ret(cos(toRad(vec.y)) * vec.x, sin(toRad(vec.y)) * vec.x);
     if (abs(vec.y) == 90 || abs(vec.y) == 270)  
     	ret.x = 0;
@@ -210,8 +200,8 @@ inline vecF toRect (vecF& vec) {
     return ret;
 }
 
-inline vecF toRect (float mag, float direc) {
-	
+inline vecF toRect (float mag, float direc)
+{
     vecF ret(cosd(direc) * mag, sind(direc) * mag);
     if (abs(direc) == 90 || abs(direc) == 270)
         ret.x = 0;
@@ -224,9 +214,9 @@ inline vecF toRect (float mag, float direc) {
     return ret;
 }
 
-    // to rectangular coordinates given a vector in radians
-inline vecF toRectFromRads (float mag, float direc) {
-	
+/* To rectangular coordinates given a vector in radians */
+inline vecF toRectFromRads (float mag, float direc)
+{
     vecF ret(cos(direc) * mag, sin(direc) * mag);
     if (epsEquals(mag, 0)) {
         ret.x = 0;
@@ -236,8 +226,8 @@ inline vecF toRectFromRads (float mag, float direc) {
 }
 #define toRRect toRectFromRads
 
-inline vecF toPolar (vecF& vec) {
-	
+inline vecF toPolar (vecF& vec)
+{
     double x = double(vec.x);
     double y = double(vec.y);
     double mag = hyp(x, y);
@@ -248,8 +238,8 @@ inline vecF toPolar (vecF& vec) {
     return vecF(float(mag), direc);
 }
 
-inline vecF toPolar (const vecF& vec) {   //////
-	
+inline vecF toPolar (const vecF& vec)
+{
 	double x = double(vec.x);
 	double y = double(vec.y);
 	double mag = hyp(x, y);
@@ -260,8 +250,8 @@ inline vecF toPolar (const vecF& vec) {   //////
 	return vecF(float(mag), direc);
 }
 
-inline vecF toPolar (float xx, float yy) {
-	
+inline vecF toPolar (float xx, float yy)
+{
     double x = double(xx);
     double y = double(yy);
     double mag = hyp(x, y);
@@ -309,8 +299,8 @@ inline float angleBetween (vec3f v1, vec3f v2)
 
 
 
-inline void setVPos (Vertex& v, vecF pos) {
-	
+inline void setVPos (Vertex& v, vecF pos)
+{
     v.position = pos;
 }
 
@@ -352,7 +342,7 @@ inline float triangleArea (const vecf& p1, const vecf& p2, const vecf& p3)
 class VecfMM
 {
 public:
-	VecfMM(vecf v) : vec(v) {}
+	VecfMM(vecf v) : vec(v) { }
 	vecf vec;
 	bool operator<(const VecfMM& other) const
 	{
@@ -443,7 +433,8 @@ public:
 	string				name;
 	
 private:
-	void moveCursorToTxtEnd() {
+	void moveCursorToTxtEnd()
+	{
 		cursor.setPosition(boxTxt.getPosition().x + boxTxt.getLocalBounds().width + 1, tbox.getPosition().y + borderOffset.y);
 	}
 };
@@ -454,7 +445,6 @@ private:
  -keep textboxes in map or vector, set name to map key
  
  -if single textbox is member of the State, assign to it w args in onCreate
- 
  
 	// EVENT HANDLING  (in pollEvent)
  if (state.filenameTbox.isActive && event.type == Event::TextEntered) {
@@ -484,7 +474,6 @@ private:
  }
  else {
 	 switch(event.type) {
- 
  
  
 onClick() { setActive(true); } //else deactivate if click not in gLB
@@ -755,7 +744,6 @@ public:
 				, oppNormal
 	;
 	float 		errorMargin = floatEps;
-
 };
 
 
@@ -916,9 +904,19 @@ inline LineSegment Line::getSegmentFromYs (float miny, float maxy) const
 
 struct Arc
 {
-	Arc () : center(vecf(0, 0)), radius(10), startAng(0), endAng(INFINITY) {}
+	Arc ()
+		: center(vecf(0, 0))
+		, radius(10)
+		, startAng(0)
+		, endAng(INFINITY)
+	{ }
+	
 	Arc (const vecf& ctr, float rad, float start = 0, float end = INFINITY)
-	: center(ctr), radius(rad), startAng(start), endAng(end) { }
+		: center(ctr)
+		, radius(rad)
+		, startAng(start)
+		, endAng(end)
+	{ }
 	
 	vecf center;
 	float 	radius
@@ -927,55 +925,13 @@ struct Arc
 	;
 };
 
+
 inline vector<vecf> LineSegment::intersectionPointsWith (const Arc& arc) const
 {
-	   std::vector<vecf> results;
-
-	   // Vector from seg_a to seg_b
-	   float dx = pt2.x - pt1.x;
-	   float dy = pt2.y - pt1.y;
-
-	   // Quadratic coefficients: (x - xc)^2 + (y - yc)^2 = r^2
-	   float A = dx * dx + dy * dy;
-	   float B = 2 * (dx * (pt1.x - arc.center.x) + dy * (pt1.y - arc.center.y));
-	   float C = (pt1.x - arc.center.x) * (pt1.x - arc.center.x) +
-				  (pt1.y - arc.center.y) * (pt1.y - arc.center.y) - arc.radius * arc.radius;
-
-	   float discriminant = B * B - 4 * A * C;
-	   if (discriminant < 0)
-		   return results; // No intersection
-
-	   // Up to two intersection t values
-	   for (int sign = -1; sign <= 1; sign += 2) {
-		   if (discriminant == 0 && sign == 1)
-			   break; // Don't repeat if only one root
-		   float t = (-B + sign * std::sqrt(discriminant)) / (2 * A);
-		   if (t < 0 || t > 1) continue; // Not on the segment
-
-		   // Intersection point
-		   vecf p = { pt1.x + t * dx, pt1.y + t * dy };
-		   bool in_arc = false;
-		   if (std::isinf(arc.endAng))
-			   in_arc = true;
-		   else {
-			   float theta = czdg(atand(p.y - arc.center.y, p.x - arc.center.x));
-
-			   // Normalize arc range for checking
-			   float norm_start = czdg(arc.startAng);
-			   float norm_end = czdg(arc.endAng);
-
-			   if (norm_start < norm_end)
-				   in_arc = (theta >= norm_start && theta <= norm_end);
-			   else // Arc crosses 2π
-				   in_arc = (theta >= norm_start || theta <= norm_end);
-		   }
-		   if (in_arc)
-			   results.push_back(p);
-	   }
-	   return results;
-   }
+		// IMPLEMENT
+	return {};
+}
    
-
 
 inline pair<Vector2f, float> circleFrom3Pts (vecf pt1, vecf pt2, vecf pt3)
 {
@@ -986,11 +942,6 @@ inline pair<Vector2f, float> circleFrom3Pts (vecf pt1, vecf pt2, vecf pt3)
 	vecf center = midline1.intersectionPointWith(midline2);
 	return make_pair(center, hyp(center, pt1));
 }
-
-
-
-
-
 
 
 
@@ -1019,18 +970,18 @@ inline bool rotatedContains (RectangleShape& r, float x, float y)
    r.setRotation(oldRot);
    
    vecf topL { rect.left, rect.top },
-		   topR { rect.left + rect.width, rect.top },
-		   botR { rect.left + rect.width, rect.top + rect.height },
-		   botL { rect.left, rect.top + rect.height };
+		topR { rect.left + rect.width, rect.top },
+		botR { rect.left + rect.width, rect.top + rect.height },
+		botL { rect.left, rect.top + rect.height };
    auto ogn = r.getPosition();
 	   /*
 		* Store the polar vectors from the origin to each (rectified)
 		* corner so we can simply add the degrees of rotation to them
 		*/
-   vecf 	tlDif = topL - ogn,
-		   trDif = topR - ogn,
-		   brDif = botR - ogn,
-		   blDif = botL - ogn;
+   vecf tlDif = topL - ogn,
+		trDif = topR - ogn,
+		brDif = botR - ogn,
+		blDif = botL - ogn;
    tlDif = toPolar(tlDif);
    trDif = toPolar(trDif);
    brDif = toPolar(brDif);
@@ -1040,17 +991,17 @@ inline bool rotatedContains (RectangleShape& r, float x, float y)
 		* box are now located
 		*/
    vecf rotTl = ogn + toRect(tlDif.x, czdg(tlDif.y + oldRot)),
-		   rotTr = ogn + toRect(trDif.x, czdg(trDif.y + oldRot)),
-		   rotBr = ogn + toRect(brDif.x, czdg(brDif.y + oldRot)),
-		   rotBl = ogn + toRect(blDif.x, czdg(blDif.y + oldRot));
+		rotTr = ogn + toRect(trDif.x, czdg(trDif.y + oldRot)),
+		rotBr = ogn + toRect(brDif.x, czdg(brDif.y + oldRot)),
+		rotBl = ogn + toRect(blDif.x, czdg(blDif.y + oldRot));
 	   /*
 		* Make lines connecting the rotated bounding corners, and
 		* determine if the xy arguments are inside the area
 		*/
-	Line 	topSide { rotTl, rotTr },
-		   rightSide { rotTr, rotBr },
-		   bottomSide { rotBr, rotBl },
-		   leftSide { rotBl, rotTl };
+	Line	topSide { rotTl, rotTr },
+			rightSide { rotTr, rotBr },
+			bottomSide { rotBr, rotBl },
+			leftSide { rotBl, rotTl };
 
    if (clockwiseOf(oldRot, 270)) {
 	   return 	topSide.yIsLessThan(pt) &&
@@ -1094,11 +1045,11 @@ public:
 	void setup (Color c)
 	{
 		vx.setRadius(4);
-		cO(vx);
+		centerOrigin(vx);
 		vx.setFillColor(c);
 		
 		hl.setRadius(10);
-		cO(hl);
+		centerOrigin(hl);
 		hl.sP(vx.gP());
 		hl.setFillColor(Color(0, 0, 0, 40));
 	}
@@ -1158,14 +1109,13 @@ public:
 
 
 
-	/* This class has to be located in a permanent position; then
-	 * call congifure(). Moving this object or an enclosing object
-	 * will invalidate the pointers to vertices
-	 */
+/* This class has to be located in a permanent position; then
+ * call congifure(). Moving this object or an enclosing object
+ * will invalidate the pointers to vertices
+ */
 class TransformableVxArray : public VertexArray
 {
 public:
-
 	TransformableVxArray (PrimitiveType p)
 	{
 		setPrimitiveType(p);
@@ -1186,7 +1136,7 @@ public:
 		scale_ = vecf(1, 1);
 		rotation_ = 0;
 		forNum (getVertexCount()) {
-			auto& vx = (*this)[i];
+			auto& vx = self[i];
 			originalDifs.insert({&vx, getPolarFromOrigin(vx)});
 		}
 	}
@@ -1337,7 +1287,6 @@ public:
 class VxShapeArray : public TransformableVxArray
 {
 public:
-	
 	void draw(RenderTarget& target, RenderStates st) const
 	{
 		if (drawVa)
@@ -1360,7 +1309,7 @@ public:
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
 				sh.sP(sh.gP().x + dif.x, sh.gP().y + dif.y);
-				(*this)[i].position = sh.gP();
+				self[i].position = sh.gP();
 			}
 		}
 	}
@@ -1368,7 +1317,7 @@ public:
 	void moveVx (int i, vecf dif)
 	{
 		dots[i].sP(dots[i].gP().x + dif.x, dots[i].gP().y + dif.y);
-		(*this)[i].position = dots[i].gP();
+		self[i].position = dots[i].gP();
 
 	}
 	
@@ -1377,7 +1326,7 @@ public:
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
 				sh.sP(pos);
-				(*this)[i].position = pos;
+				self[i].position = pos;
 			}
 		}
 	}
@@ -1385,7 +1334,7 @@ public:
 	void setVxPos (int i, vecf pos)
 	{
 		dots[i].sP(pos);
-		(*this)[i].position = pos;
+		self[i].position = pos;
 	}
 
 	void deleteVx (VxShape& sh)
@@ -1451,16 +1400,16 @@ public:
 	bool						drawVa = true
 								, drawDots = true
 	;
-
 };
 
 
 
 
 // FINISH
-class HexagonShape: public Shape {
+class HexagonShape: public Shape
+{
 public:
-	HexagonShape () {}
+	HexagonShape () { }
 	
 	HexagonShape (vecF sz)
 		: m_size(sz)
@@ -1500,9 +1449,10 @@ private:
 };
 
 
-class OctagonShape: public Shape {
+class OctagonShape: public Shape
+{
 public:
-	OctagonShape () {}
+	OctagonShape () { }
 	
 	OctagonShape (vecF sz)
 		: m_size(sz)
@@ -1523,6 +1473,7 @@ public:
 	
 	virtual vecF getPoint (size_t i) const
 	{
+		// These should be stored on creation
 		float side = m_size.x / (2 * sind(45) + 1);
 		float hfside = side / 2;
 		float hfsize = m_size.x / 2;
@@ -1543,9 +1494,10 @@ private:
 	vecF m_size;
 };
 
-class StarShape: public Shape {
+class StarShape: public Shape
+{
 public:
-	StarShape () {}
+	StarShape () { }
 	
 	StarShape (vecF sz)
 		: m_size(sz)
@@ -1588,7 +1540,8 @@ private:
 };
 
 
-class TriangleShape: public Shape {
+class TriangleShape: public Shape
+{
 public:
 	TriangleShape () {}
 	
@@ -1633,7 +1586,7 @@ class ZImage : public Image
 {
 public:
 	
-	ZImage () {}
+	ZImage () { }
 	
 	ZImage (const Image& img)
 	{
@@ -1777,8 +1730,8 @@ public:
 					};
 					else v = {
 								 {0, -1},
-						{-1, 0}, {0, 0}, {1, 0},
-								 {0, 1},
+						{-1, 0}, {0,  0}, {1, 0},
+								 {0,  1},
 					};
 					for (auto& coord : v) {
 						if (	i + coord.x >= 0 && i + coord.x <= wid &&
@@ -1946,7 +1899,7 @@ public:
 
 
 
-
+/* Visualize location being used by code */
 class DbgPoint : public Drawable
 {
 public:
@@ -2010,10 +1963,10 @@ struct Vert
 	{
 		s.setRadius(4);
 		s.setFillColor(Color::Black);
-		cO(s);
+		centerOrigin(s);
 		hl.setRadius(10);
 		hl.setFillColor(Color(0, 0, 0, 40));
-		cO(hl);
+		centerOrigin(hl);
 		hl.sP(s.gP());
 		controls.clear();
 	}
@@ -2132,16 +2085,6 @@ vector<vecf> getSplinePts (vector<Vert>& verts, bool connectEnds = true, int div
 
 
 
-
-
-
-
-
-
-
-
-
-
 	/* COLORS */
 
 
@@ -2199,8 +2142,8 @@ inline Color hsbToRgb (intvec iv)
 }
 
 
-inline vector<int> rgbToHsb (float r, float g, float b) {
-
+inline vector<int> rgbToHsb (float r, float g, float b)
+{
 	r /= 2.55;
 	g /= 2.55;
 	b /= 2.55;
@@ -2258,6 +2201,12 @@ inline Color randomRangedHSB (intPair h, intPair s, intPair b)
 	int sat = randRange(s.first, s.second);
 	int bri = randRange(b.first, b.second);
 	return hsbToRgb(hue, sat, bri);
+}
+
+inline Color randomColorMaxSat (int maxSat)
+{
+	maxSat = clamp(maxSat, 0, 255);
+	return randomRangedHSB({0, 255}, {0, maxSat}, {0, 255});
 }
 
 inline Color colorWithRandDeviation (const Color& c, int dev)
@@ -2349,7 +2298,7 @@ inline int getBrightness (const Color& c)
 	return rgbToHsb(c)[2];
 }
 
-	/* lessening increment doesn't work */
+	// lessening increment doesn't work
 inline Color addHue (const Color& c, int inc=3)
 {
 	auto col { rgbToHsb(c) };
@@ -2364,7 +2313,7 @@ inline Color decreaseHue (const Color& c, int inc=3)
 	return hsbToRgb(col);
 }
 
-	/* will tend towards red/0° unless HSB values stored */
+	/* Will tend towards red/0° if used repeatedly unless HSB values stored */
 inline Color addSaturation (const Color& c, int inc=1)
 {
 	auto col { rgbToHsb(c) };
@@ -2430,15 +2379,14 @@ inline Color decreaseBrightness (const Color& c, int inc=1)
 	 * have to go through declaring in the header and setting up in onCreate
 	 * just for one quick play
 	 */
-inline void playSoundOnce (const string& file) {
-	
+inline void playSoundOnce (const string& file)
+{
 	SoundBuffer sb{};
-	sb.loadFromFile("resources/" + file);
+	sb.loadFromFile("resources/sounds/" + file);
 	Sound snd{};
 	snd.setBuffer(sb);
 	snd.play();
 }
-
 
 inline void playSoundAtVolPct (Sound& snd, float pct)
 {
@@ -2447,8 +2395,5 @@ inline void playSoundAtVolPct (Sound& snd, float pct)
 	snd.play();
 //	snd.setVolume(oldVal);
 }
-
-
-
 
 #endif /* jwzsfml_hpp */

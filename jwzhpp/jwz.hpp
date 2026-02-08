@@ -20,16 +20,17 @@
 #include <ctime>
 #include <chrono>
 #include <filesystem>
-//variant?
+#include <variant>
+#include <optional>
 
 #include <set>
 #include <unordered_set>
-//#include <list>
-//#include <regex>
-//#include <array>
-//#include <deque>
 #include <queue>
 #include <stack>
+//#include <regex>
+//#include <list>
+//#include <array>
+//#include <deque>
 
 
 using std::string;
@@ -135,76 +136,95 @@ using HRClock = std::chrono::high_resolution_clock;
 #define forEachCpy(cont) for (auto obj : cont)
 
 
-inline const string	cppPath = "/Users/johnwz/Programming/CPP/";
-inline const string	headerPath = "/Users/johnwz/Programming/CPP/gameheaders/";
-inline const string rscPath = "/usr/local/rsc/";
-inline const string imgPath = "/usr/local/rsc/img/";
-inline const string sndPath = "/usr/local/rsc/snd/";
-
 constexpr float     pi = 3.141592654;
 constexpr float     degsPerRad = 57.2957795;
 	/* Not const so that program can globally use a more lenient value */
 inline float		floatEps = .00001;
 
-inline bool 	POn = true;	// show debug printing?
+inline bool 	POn = true;		// Show debug printing
 
-inline void dp (const string& str, bool nl=true, string pfx = "") {
-    if (POn) cout << str;
+/* Debug print */
+inline void dp (const string& str, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (string:) " << str;
     if (nl) cout << endl;
 }
 
-inline void dp (int str, bool nl=true, string pfx = "") {
-    if (POn) cout << "int: "<< str;
+inline void dp (int str, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (int:) " << str;
     if (nl) cout << endl;
 }
 
-inline void dp (unsigned int str, bool nl=true, string pfx = "") {
-	if (POn) cout << "uint: "<< str;
+inline void dp (unsigned int str, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (uint:) " << str;
 	if (nl) cout << endl;
 }
 
-inline void dp (float str, bool nl=true, string pfx = "") {
-	if (POn) cout << "float: "<< str;
+inline void dp (float str, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (float:) " << str;
 	if (nl) cout << endl;
 }
 
-inline void dp (unsigned long str, bool nl=true, string pfx = "") {
-	if (POn) cout << "ulong: "<< str;
+inline void dp (unsigned long str, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (ulong:) " << str;
 	if (nl) cout << endl;
 }
 
-inline void dp (long str, bool nl=true, string pfx = "") {
-	if (POn) cout << "long: "<< str;
+inline void dp (long str, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (long:) " << str;
 	if (nl) cout << endl;
 }
 
-inline void dp (unsigned long long str, bool nl=true, string pfx = "") {
-	if (POn) cout << "ulonglong: "<< str;
+inline void dp (unsigned long long str, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (ulonglong:) " << str;
 	if (nl) cout << endl;
 }
 
-inline void dp (long long str, bool nl=true, string pfx = "") {
-	if (POn) cout << "longlong: "<< str;
+inline void dp (long long str, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (longlong:) " << str;
 	if (nl) cout << endl;
 }
 
-inline void dp (double str, bool nl=true, string pfx = "") {
-    if (POn) cout << "double: "<< str;
+inline void dp (double str, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (double:) " << str;
     if (nl) cout << endl;
 }
 
-inline void dp (char str, bool nl=true, string pfx = "") {
-    if (POn) cout << "char: "<< str;
+inline void dp (char str, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (char:) " << str;
     if (nl) cout << endl;
 }
 
-inline void dp (bool str, bool nl=true, string pfx = "") {
-    if (POn) cout << "bool: " << (str ? "true" : "false");
+inline void dp (bool str, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (bool:) " << (str ? "true" : "false");
     if (nl) cout << endl;
 }
 
-inline void dp (vector<bool>& v, bool nl=true) {
-	if (POn) cout << "{";
+inline void dp (vector<bool>& v, bool nl=true, string pfx = "")
+{
+	if (!POn) return;
+	cout << pfx << " (bool){";
 	for (int i = 0; i < v.size(); ++i) {
 		cout << (v[i] ? "true" : "false");
 		if (i < v.size() - 1)
@@ -214,8 +234,10 @@ inline void dp (vector<bool>& v, bool nl=true) {
 	if (nl) cout << endl;
 }
 
-inline void dp (vector<float>& v, bool nl=true) {
-    if (POn) cout << "{";
+inline void dp (vector<float>& v, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (float){";
 	for (int i = 0; i < v.size(); ++i) {
 		cout << v[i];
 		if (i < v.size() - 1)
@@ -225,8 +247,10 @@ inline void dp (vector<float>& v, bool nl=true) {
     if (nl) cout << endl;
 }
 
-inline void dp (vector<int>& v, bool nl=true) {
-    if (POn) cout << "{";
+inline void dp (vector<int>& v, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (int){";
 	for (int i = 0; i < v.size(); ++i) {
 		cout << v[i];
 		if (i < v.size() - 1)
@@ -236,8 +260,10 @@ inline void dp (vector<int>& v, bool nl=true) {
     if (nl) cout << endl;
 }
 
-inline void dp (vector<char>& v, bool nl=true) {
-    if (POn) cout << "{";
+inline void dp (vector<char>& v, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (char){";
 	for (int i = 0; i < v.size(); ++i) {
 		cout << v[i];
 		if (i < v.size() - 1)
@@ -247,8 +273,10 @@ inline void dp (vector<char>& v, bool nl=true) {
     if (nl) cout << endl;
 }
 
-inline void dp (vector<string>& v, bool nl=true) {
-    if (POn) cout << "{";
+inline void dp (vector<string>& v, bool nl=true, string pfx = "")
+{
+    if (!POn) return;
+	cout << pfx << " (string){";
 	for (int i = 0; i < v.size(); ++i) {
 		cout << v[i];
 		if (i < v.size() - 1)
@@ -258,58 +286,48 @@ inline void dp (vector<string>& v, bool nl=true) {
 	if (nl) cout << endl;
 }
 
-inline void dp (vector<vector<float>>& v, bool nl=true) {
+inline void dp (vector<vector<float>>& v, bool nl=true, string pfx = "")
+{
 	if (POn) {
-		cout << "vector<vector>>: \n";
-		for (auto& vv:v)
+		cout << pfx << " (vector<vector<float>>:)\n";
+		for (auto& vv : v)
             dp(vv, false);
 		if (nl) cout << endl;
-		}
 	}
+}
 
-inline void dp (vector<vector<int>>& v, bool nl=true) {
+inline void dp (vector<vector<int>>& v, bool nl=true, string pfx = "")
+{
     if (POn) {
-        cout << "vector<vector>>: \n";
-        for (auto& vv:v)
+        cout << pfx << " (vector<vector<int>>:)\n";
+        for (auto& vv : v)
             dp(vv, false);
         if (nl) cout << endl;
-        }
-    }
-
-    // toString used to be a #define but then it clashed with TGUI
-inline string toString (int i) {
-    return std::to_string(i);
+	}
 }
 
-inline string toString (float i) {
-    return std::to_string(i);
-}
+    /* toString used to be a #define but then it clashed with TGUI */
+inline string toString (int i) { return std::to_string(i); }
 
-inline string toString (double i) {
-    return std::to_string(i);
-}
+inline string toString (float i) { return std::to_string(i); }
 
-inline string toString (long i) {
-    return std::to_string(i);
-}
+inline string toString (double i) { return std::to_string(i); }
 
-inline string toString (long long i) {
-    return std::to_string(i);
-}
+inline string toString (long i) { return std::to_string(i); }
 
-inline string toString (unsigned int i) {
-    return std::to_string(i);
-}
+inline string toString (long long i) { return std::to_string(i); }
 
-inline string toString (char i) {
-    return std::to_string(i);
-}
+inline string toString (unsigned int i) { return std::to_string(i); }
 
-	// `erase` sometimes throws errors... substring
+inline string toString (char i) { return std::to_string(i); }
+
+/* Control how many decimal places are printed for floats */
 inline string floatStr (float f, int decPlaces = 1) {
-	if (std::isnan(f))
+	if (isnan(f))
 		return "NAN";
-    string s = tS(f);
+	else if (isinf(f))
+		return "INFINITY";
+    string s = toString(f);
     return s.erase(!decPlaces || (decPlaces == 1 && s[s.size() - 1] == '0') ?
                    s.size() - (8 - decPlaces) :
                    s.size() - (6 - decPlaces));
@@ -379,7 +397,7 @@ struct LocalTime
 		hours = tm_.tm_hour;
 		dayNum = tm_.tm_mday;
 		month = tm_.tm_mon + 1;
-		year = 1900 + tm_.tm_year; // year = tm_.tm_year;
+		year = 1900 + tm_.tm_year;
 		weekday = tm_.tm_wday;
 		dayOfYear = tm_.tm_yday;
 		isDST = tm_.tm_isdst;
@@ -390,16 +408,13 @@ struct LocalTime
 		, minutes(info.tm_min)
 		, hours(info.tm_hour)
 		, dayNum(info.tm_mday)
-//		, month(info.tm_mon)
-//		, year(info.tm_year)
+		, month(info.tm_mon + 1)
+		, year(1900 + info.tm_year)
 		, weekday(info.tm_wday)
 		, dayOfYear(info.tm_yday)
 		, isDST(info.tm_isdst)
 		, tm_(info)
-	{
-		year = 1900 + info.tm_year;
-		month = info.tm_mon + 1;
-	}
+	{ }
 	
 	string time12Hr (bool useSeconds = false)
 	{
@@ -488,16 +503,19 @@ struct LocalTime
 
 /* ========== NUMERIC ============== */
 
+/* `min` and `max` are included */
 inline int randRange (int min, int max)
 {
     return rand() % (max - min + 1) + min;
 }
 
+/* 0 and `max` are included */
 inline int randRange (int max)
 {
 	return randRange (0, max);
 }
 
+/* Only for up to 3 decimal places */
 inline float randFloat (float min, float max)
 {
 	return float(randRange(int(min * 1000), int(max * 1000))) / 1000.f;
@@ -505,16 +523,18 @@ inline float randFloat (float min, float max)
 
 inline bool flipCoin() { return randRange(1); }
 
-inline float incm (float orig, float inc, float max_) {
+inline float incm (float orig, float inc, float max_)
+{
     return min(orig + inc, max_);
 }
 
-inline float decm (float orig, float inc, float min_ = 0) {
+inline float decm (float orig, float inc, float min_ = 0)
+{
     return max(orig - inc, min_);
 }
 
-	/* Canonicalize degrees: no negatives or greater than 360. Not necessary to use this if
-	 * only passing the result to a trigonometric function
+	/* Canonicalize degrees: no negatives or greater than 360. Not necessary
+	 * to use this if only passing the result to a trigonometric function.
 	 */
 inline float czdg (float deg) {
 	while (deg < 0)
@@ -533,7 +553,7 @@ inline float czdg (float deg) {
 //	return ret;
 }
 
-	/* Canonicalize radians: 0 <= rad < 2𝞹*/
+	/* Canonicalize radians: 0 <= rad < 2𝞹 */
 inline float czrd (float rad)
 {
 	float ret = fmod(rad, 2 * pi);
@@ -542,60 +562,28 @@ inline float czrd (float rad)
 	return ret;
 }
 
-inline float toDeg (float rad) {
-	return czdg(rad * degsPerRad);
-}
+inline float toDeg (float rad) { return czdg(rad * degsPerRad); }
 
-//inline float toDeg (float rad) {		// old form
-//	float conv = rad * degsPerRad;
-//	int flr = floor(conv);
-//	auto ret = flr % 360 + conv - flr;
-//	if (ret < 0)
-//		ret += 360;
-//	return ret;
-//}
+inline float toRad (float deg) { return czdg(deg) / degsPerRad; }
 
-inline float toRad (float deg) {
-	return czdg(deg) / degsPerRad;
-}
+    /* Trigonometric functions using degrees */
+inline float cosd (float ang) { return cos(toRad(ang)); }
 
-//inline float toRad (float deg) {		// old form
-//	if (deg < 0)
-//		deg += 360;
-//	return (deg >= 360 ?
-//			int(floor(deg)) % 360 + deg - floor(deg) :
-//			deg)
-//			/ degsPerRad;
-//}
+inline float sind (float ang) { return sin(toRad(ang)); }
 
-    // trigonometric functions using degrees
-inline float cosd (float ang) {
-    return cos(toRad(ang));
-}
+inline float tand (float ang) { return tan(toRad(ang)); }
 
-inline float sind (float ang) {
-    return sin(toRad(ang));
-}
+inline float atand (float x, float y) { return toDeg(atan2(x, y)); }
 
-inline float tand (float ang) {
-    return tan(toRad(ang));
-}
+/* Get hypotenuse */
+inline float hyp (float x, float y) { return abs(sqrt(x * x + y * y)); }
 
-inline float atand (float x, float y) {
-	return toDeg(atan2(x, y));
-}
+inline double hyp (double x, double y) { return abs(sqrt(x * x + y * y)); }
 
-
-inline float hyp (float x, float y) {
-    return abs(sqrt(x * x + y * y));
-}
-
-inline double hyp (double x, double y) {
-    return abs(sqrt(x * x + y * y));
-}
-
+/* Check whether value falls within a range: options to equal the limits */
 inline bool between (float num, float mn, float mx,
-                    bool minweq = false, bool maxweq = false) {
+                    bool minweq = false, bool maxweq = false)
+{
    if (minweq) {
        if (maxweq)
             return num >= mn && num <= mx;
@@ -606,24 +594,20 @@ inline bool between (float num, float mn, float mx,
     else return num > mn && num < mx;
 }
 
-inline float mean (float a, float b)
+inline float mean (float a, float b) { return min(a, b) + abs(b - a) / 2; }
+
+inline float absDif (float a, float b) { return abs(b - a); }
+
+inline bool isOrBetween (float arg, float mn, float mx)
 {
-	return min(a, b) + abs(b - a) / 2;
+	return arg >= mn && arg <= mx;
 }
 
-inline float absDif (float a, float b)
-{
-	return abs(b - a);
-}
-
-inline bool isOrBetween (float arg, float mn, float mx) {
-    return arg >= mn && arg <= mx;
-}
-
+/* Epsilon comparisons for floats */
 inline bool epsEquals (float a, float b, float eps = floatEps, bool disregardInfSign = false)
 {
 	if (std::isnan(a) || std::isnan(b))
-		return false;	//// true?
+		return false;
 	if (std::isinf(a)) {
 		/* Potentially use for collinearity checks */
 		if (disregardInfSign)
@@ -659,10 +643,10 @@ inline bool epsEquals (vector<float> v1, vector<float> v2)
 	return true;
 }
 
-	/* finds the <= 180 angle between two given angles */
+/* Finds the <= 180 angle between two given angles */
 inline float angleBetween (float ang1, float ang2)
 {
-		/* if the degree values of the two angles have a difference of more than 180,
+		/* If the degree values of the two angles have a difference of more than 180,
 		 * the solution angle will encompass the 0° mark. Instead of merely finding the
 		 * difference between angles for a solution, we have to add (360 - larger degree)
 		 * to the smaller degree to get the full angle
@@ -673,7 +657,7 @@ inline float angleBetween (float ang1, float ang2)
 	else return angleDif;
 }
 
-	/* always returns a positive magnitude */
+/* Always returns a positive magnitude */
 inline float clockwiseAngleBetween (float fromAng, float toAng)
 {
 	if (toAng > fromAng)
@@ -689,9 +673,9 @@ inline float counterclockwiseAngleBetween (float fromAng, float toAng)
 }
 #define counterClockwiseAngleBetween counterclockwiseAngleBetween
 
-	/* determine whether testAng would sooner be reached going clockwise from refAng
-	 * rather than otherwise
-	 */
+/* Determine whether testAng would sooner be reached going clockwise from refAng
+ * rather than otherwise
+ */
 inline bool clockwiseOf (float testAng, float refAng)
 {
 	if (czdg(refAng) < 180)
@@ -699,8 +683,7 @@ inline bool clockwiseOf (float testAng, float refAng)
 	else return testAng >= refAng || testAng <= czdg(refAng + 180);
 }
 
-	/* Range for inclusion begins at `startAng` and continues clockwise to `endAng`.
-	 */
+/* Range for inclusion begins at `startAng` and continues *clockwise* to `endAng` */
 inline bool angleIsOrFallsBetween (float testAng, float startAng, float endAng)
 {
 	testAng = czdg(testAng);
@@ -711,7 +694,7 @@ inline bool angleIsOrFallsBetween (float testAng, float startAng, float endAng)
 	if (startAng < endAng)
 		return isOrBetween(testAng, startAng, endAng);
 	else return testAng >= startAng
-		|| testAng <= endAng;
+				|| testAng <= endAng;
 }
 
 inline bool angleIsOrFallsBetweenRads (float testAng, float startAng, float endAng)
@@ -798,27 +781,29 @@ bool isOfKind (unique_ptr<Base>& obj)
 #define valW valWhich
 
 template<typename Cont, typename Pred>
-typename Cont::value_type*
-valWhich (Cont& c, Pred p) {
+typename Cont::value_type* valWhich (Cont& c, Pred p)
+{
 	auto itr = find_if(c.begin(), c.end(), p);
 	return itr != c.end() ? &(*itr) : nullptr;
 }
 
 template<typename Cont>
-int indexOfRef (const Cont& cont, typename Cont::value_type& ele) {
+int indexOfRef (const Cont& cont, typename Cont::value_type& ele)
+{
 	for (int i = 0; i < cont.size(); ++i) {
 		if (&cont[i] == &ele)
             return i;
-		}
+	}
 	return -1;
 }
 
 template<typename Cont>
-int indexOf (const Cont& cont, typename Cont::value_type ele) {
+int indexOf (const Cont& cont, typename Cont::value_type ele)
+{
 	for (int i = 0; i < cont.size(); ++i) {
 		if (cont[i] == ele)
 			return i;
-		}
+	}
 	return -1;
 	
 	// BETTER IMPLEMENTATION?
@@ -826,37 +811,39 @@ int indexOf (const Cont& cont, typename Cont::value_type ele) {
 //	return itr != v.end() ? distance(v.begin(), itr) : -1;
 }
 
-	
 template<typename Cont, typename Pred>
-int indexWhich (const Cont& cont, Pred p) {
+int indexWhich (const Cont& cont, Pred p)
+{
 	for (int i = 0; i < cont.size(); ++i) {
 		if (p(cont[i]))
             return i;
-		}
+	}
 	return -1;
 }
 	
-	template<typename Cont, typename Pred>
-  int  
-countWhich (const Cont& cont, Pred p) {
+template<typename Cont, typename Pred>
+int countWhich (const Cont& cont, Pred p)
+{
 	int ct = 0;
 	for (int i = 0; i < cont.size(); ++i) {
 		if (p(cont[i]))
             ++ct;
-		}
+	}
 	return ct;
 }
 	
-template<class T, class P> vector<T>
-subset (const vector<T>& v, P p) {
-	vector<T> sub {};
+template<class T, class P>
+vector<T> subset (const vector<T>& v, P p)
+{
+	vector<T> sub;
 	copy_if(v.begin(), v.end(), back_inserter(sub), p);
 	return sub;
 }
 
-template<class T, class P> vector<T>
-subsetRef (const vector<T>& v, P p) {
-	vector<T&> sub {};
+template<class T, class P>
+vector<T> subsetRef (const vector<T>& v, P p)
+{
+	vector<T&> sub;
 	for (size_t i = 0; i < sub.size(); i++) {
 		if (p(v[i]))
 			sub.push_back(std::ref(v[i]));
@@ -864,41 +851,20 @@ subsetRef (const vector<T>& v, P p) {
 	return sub;
 }
 
-template<typename Cont, typename Pred> Cont
-subsetOld (const Cont& cont, Pred p) {
-	Cont sub {};
-	int sz = int(cont.size());
-	for (int i = 0; i < sz; i++) {
-		if (p(cont[i]))
-			sub.push_back(cont[i]);
-	}
-	return sub;
-}
-
-template<class T> vector<T>
-vecMinusVec (const vector<T>& v, const vector<T>& v2) {
+template<class T>
+vector<T> vecMinusVec (const vector<T>& v, const vector<T>& v2)
+{
 	vector<T> ret;
 	copy_if(v.begin(), v.end(), back_inserter(ret),
 		[&](auto x) {
-		return find(v2.begin(), v2.end(), x) == v2.end();
+			return find(v2.begin(), v2.end(), x) == v2.end();
 	});
 	return ret;
 }
 
-	template<typename Cont>
-  Cont  
-vecMinusVecOld (Cont& cont, const Cont& cont2) {
-	for (auto e:cont2) {
-		auto itr = std::find(cont.begin(), cont.end(), e);
-		if (itr != cont.end())
-            cont.erase(itr);
-	}
-	return cont;
-}
-
-
-template<class T> vector<T>
-vecPlusVec(const vector<T>& lhs, const vector<T>& rhs) {
+template<class T>
+vector<T> vecPlusVec(const vector<T>& lhs, const vector<T>& rhs)
+{
 	vector<T> ret {};
 	ret.reserve(lhs.size() + rhs.size());
 	ret.insert(ret.end(), lhs.begin(), lhs.end());
@@ -906,53 +872,61 @@ vecPlusVec(const vector<T>& lhs, const vector<T>& rhs) {
 	return ret;
 }
 
-template<class T> vector<T>&
-vecPlusEqVec(vector<T>& lhs, const vector<T>& rhs) {
+template<class T>
+vector<T>& vecPlusEqVec(vector<T>& lhs, const vector<T>& rhs)
+{
 	lhs.insert(lhs.end(), rhs.begin(), rhs.end());
 	return lhs;
 }
 
-	/* Modifies original vector */
-template<class T> vector<T>&
-appendUnique(vector<T>& lhs, const vector<T>& rhs) {
+/* Modifies original vector */
+template<class T>
+vector<T>& appendUnique(vector<T>& lhs, const vector<T>& rhs)
+{
 	for (auto& ele : rhs)
 		if (find(lhs.begin(), lhs.end(), ele) == lhs.end())
 			lhs.push_back(ele);
 }
 
-template<class C, class P> void
-forEachAssoc(C& c, P p) {
+template<class C, class P>
+void forEachAssoc(C& c, P p)
+{
 	int i = 0;
 	for (auto& ele : c) {
 		p(i++, ele);
 	}
 }
-	/* Returns copy */
-template<class T> vector<T>
-getUnique(const vector<T>& c) {
-	vector<T> culled {};
+
+/* Returns copy */
+template<class T>
+vector<T> getUnique(const vector<T>& c)
+{
+	vector<T> culled;
 	culled.reserve(c.size());
 	for (auto& ele : c)
 		if (find(culled.begin(), culled.end(), ele) == culled.end())
 			culled.push_back(ele);
 	return culled;
 }
-// NOTE: for large vectors, more efficient if implementation uses an unordered set,
+// NOTE: for large vectors, more efficient if implementation used an unordered set,
 // and checks to see if the new insertion was successful. Faster than std::find
 
-template<class T> int
-indexOfMax(const vector<T>& c) {
+template<class T>
+int indexOfMax(const vector<T>& c)
+{
 	if (c.empty())
-		return -1; // ?
+		return -1;
 	return distance(c.begin(), max_element(c.begin(), c.end()));
 }
 
-	/* Returns elements in the order they appear in the lefthand vector.
-	 * Only matches pairs of duplicate elements, so intersect {1,2,1,3,1},
-	 * {3,1,1,3,4} will return {1,1,3} */
-template<class T> vector<T>
-intersect(const vector<T>& lhs, const vector<T>& rhs) {
-	vector<T> ret {};
+/* Returns elements in the order they appear in the lefthand vector.
+ * Only matches pairs of duplicate elements, so intersect {1,2,1,3,1},
+ * {3,1,1,3,4} will return {1,1,3}
+ */
+template<class T>
+vector<T> intersect(const vector<T>& lhs, const vector<T>& rhs)
+{
+	vector<T> ret;
 	ret.reserve(lhs.size());
 	vector<T> rcopy {rhs};
 	for (auto& ele : lhs) {
@@ -964,10 +938,11 @@ intersect(const vector<T>& lhs, const vector<T>& rhs) {
 	}
 	return ret;
 }
-// Make unique val version
+// make unique val version
 
 template<class T>
-string join(const vector<T>& v, string sep = "") {
+string join(const vector<T>& v, string sep = "")
+{
 	stringstream ss;
 	for (size_t i = 0; i < v.size(); ++i) {
 		ss << v[i];
@@ -977,8 +952,9 @@ string join(const vector<T>& v, string sep = "") {
 	return ss.str();
 }
 
-template<class T> int
-lastIndexOf(const vector<T>& v, T val) {
+template<class T>
+int lastIndexOf(const vector<T>& v, T val)
+{
 	auto ritr = find(v.rbegin(), v.rend(), val);
 	return (ritr != v.rend() ? distance(ritr, v.rend()) - 1 : -1);
 }
@@ -1005,9 +981,10 @@ lastIndexOf(const vector<T>& v, T val) {
 //	return v;
 //}
 
-template<class T> vector<T>
-sublist(const vector<T>& v, int startIdx, int numToIncl = 0) {
-	//HANDLE BAD INDICES;CLAMP
+template<class T>
+vector<T> sublist(const vector<T>& v, int startIdx, int numToIncl = 0)
+{
+	//HANDLE BAD INDICES; CLAMP
 	vector<T> sub;
 	if (v.empty())
 		return sub;
@@ -1022,7 +999,6 @@ sublist(const vector<T>& v, int startIdx, int numToIncl = 0) {
 	copy(v.begin() + startIdx, endItr, back_inserter(sub));
 	return sub;
 }
-
 
 //string& toLower(string& str) {
 //	transform(str.begin(), str.end(), str.begin(),
@@ -1108,44 +1084,32 @@ sublist(const vector<T>& v, int startIdx, int numToIncl = 0) {
 //	return str;
 //}
 
-template<class M> vector<typename M::key_type>
-keysToVec(M& m) {
+template<class M>
+vector<typename M::key_type> keysToVec(M& m)
+{
 	vector<typename M::key_type> keys;
 	for (auto& kv : m)
 		keys.push_back(kv.first);
 	return keys;
 }
 
-template<class M> vector<typename M::mapped_type>
-valsToVec(M& m) {
+template<class M>
+vector<typename M::mapped_type> valsToVec(M& m)
+{
 	vector<typename M::mapped_type> vals;
 	for (auto& kv : m)
 		vals.push_back(kv.second);
 	return vals;
 }
 
-template<class S> vector<typename S::value_type>
-setToVec(S& s) {
+template<class S>
+vector<typename S::value_type> setToVec(S& s)
+{
 	return {s.begin(), s.end()};
 }
 
-
-  // this was probably spawned from thinking of TADS object references,
-  // but probably has no meaning in c++: why pass the T reference and
-  // have it returned?
 template<typename Cont>
-typename Cont::value_type
-vecPopVal (Cont& c, typename Cont::value_type ele) {
-auto it = std::find(c.begin(), c.end(), ele);
-// if ele isn't found?
-auto ret = *it;
-c.erase(it);
-return ret;
-}
-
-		template<typename Cont>
-	Cont&
-eraseElem (Cont& c, typename Cont::value_type ele)
+Cont& eraseElem (Cont& c, typename Cont::value_type ele)
 {
 	auto itr = std::find(c.begin(), c.end(), ele);
 	if (itr != c.end())
@@ -1153,123 +1117,57 @@ eraseElem (Cont& c, typename Cont::value_type ele)
 	return c;
 }
 
-		template<typename Cont>
-	Cont&
-eraseIndex (Cont& c, size_t index)
+template<typename Cont>
+Cont& eraseIndex (Cont& c, size_t index)
 {
 	if (index < c.size())
 		c.erase(c.begin() + index);
 	return c;
 }
 
-	template<typename Cont>
-  typename Cont::value_type
-vecPopRand (Cont& cont) {
+template<typename Cont>
+typename Cont::value_type vecPopRand (Cont& cont)
+{
 	int sz = int(cont.size());
-	if (sz<1)
+	if (sz < 1)
         cerr << "Container size 0";
-	int idx = randRange(1, sz);
-	auto ret = cont[idx-1];
-	cont.erase(cont.begin() + idx - 1);
+	int idx = randRange(sz - 1);
+	auto ret = cont[idx];
+	cont.erase(cont.begin() + idx);
 	return ret;
 }
 
-	template<typename Cont>
-  typename Cont::value_type*
-randElemPtr (const Cont& cont) {
-	int sz = int(cont.size());
-	if (sz<1)
-        cerr<<"Container size 0";
-	int idx = randRange(1, sz);
-	return &cont[idx];
-}
-
-	template<typename Cont>
-  typename Cont::value_type&
-randElemRef (const Cont& cont) {
+template<typename Cont>
+typename Cont::value_type* randElemPtr (const Cont& cont)
+{
 	int sz = int(cont.size());
 	if (sz < 1)
         cerr << "Container size 0";
-	int idx = randRange(1, sz);
-	return cont[idx];
+	return &cont[randRange(sz - 1)];
 }
 
-	template<typename Cont>
-  typename Cont::value_type
-randElemVal (const Cont& cont) {
+template<typename Cont>
+typename Cont::value_type& randElemRef (const Cont& cont)
+{
 	int sz = int(cont.size());
 	if (sz < 1)
-        cerr<<"Container size 0";
-	int idx = randRange(1, sz);
-	return cont[idx - 1];
+        cerr << "Container size 0";
+	return cont[randRange(sz - 1)];
 }
 
-// DEPRECATED: LEAVING IN FOR OLDER GAMES
-    template<typename Cont>
-  typename Cont::value_type
-popOut (Cont& c, typename Cont::value_type ele) {
-    auto ret = *std::find(c.begin(), c.end(), ele);
-    std::remove_copy_if(c.begin(), c.end(), c.begin(), [&](auto& x) { return x == ret; } );
-    c.pop_back();
-    return ret;
+template<typename Cont>
+typename Cont::value_type randElemVal (const Cont& cont)
+{
+	int sz = int(cont.size());
+	if (sz < 1)
+        cerr << "Container size 0";
+	return cont[randRange(sz - 1)];
 }
 
-    template<typename Cont, typename Pred>
- typename Cont::value_type*
-findFirstWhich (Cont& c, Cont& d, Pred p) {
+template<typename Cont, typename Pred>
+typename Cont::value_type* findFirstWhich (Cont& c, Cont& d, Pred p)
+{
     return &(*(find_first_of(c.begin(), c.end(), d.begin(), d.end(), p)));
 }
 
-
-
-/*
- IMPLEMENT AND TEST  (code gotten from perplexity)
- More efficient data structure for constant appending and removal of elements
-
-template <typename K, typename V>
-class VectorMap {
-private:
-	std::vector<std::pair<K, V>> data;
-	std::unordered_map<K, size_t> index_map;
-
-public:
-	void insert(const K& key, const V& value) {
-		if (index_map.find(key) == index_map.end()) {
-			data.push_back({key, value});
-			index_map[key] = data.size() - 1;
-		} else {
-			size_t index = index_map[key];
-			data[index].second = value;
-		}
-	}
-
-	void remove(const K& key) {
-		auto it = index_map.find(key);
-		if (it != index_map.end()) {
-			size_t index = it->second;
-			size_t last_index = data.size() - 1;
-			
-			if (index != last_index) {
-				std::swap(data[index], data[last_index]);
-				index_map[data[index].first] = index;
-			}
-			
-			data.pop_back();
-			index_map.erase(it);
-		}
-	}
-
-	V& operator[](const K& key) {
-		auto it = index_map.find(key);
-		if (it == index_map.end()) {
-			insert(key, V());
-			return data.back().second;
-		}
-		return data[it->second].second;
-	}
-
-	// Other methods like size(), clear(), etc.
-};
-*/
-
-#endif /* jwz_hpp */
+#endif  /* jwz_hpp */

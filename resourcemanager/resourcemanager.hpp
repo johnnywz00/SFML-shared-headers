@@ -51,6 +51,23 @@ public:
 	
 	static Sound& getSound (string key) { return soundMap[key]; }
 	
+	static Font& getDefaultFont ()
+	{
+		auto dfont = fontMap.begin();
+		if ((dfont = fontMap.find("default")) != fontMap.end())
+			return (*dfont).second;
+		if ((dfont = fontMap.find("debug")) != fontMap.end())
+			return (*dfont).second;
+		if ((dfont = fontMap.find("debugFont")) != fontMap.end())
+			return (*dfont).second;
+		if ((dfont = fontMap.begin()) != fontMap.end())
+			return (*dfont).second;
+		else {
+			static Font f;	// Should never be used
+			return f;
+		}
+	}
+	
 private:
 	static void loadResources ()
 	{
@@ -148,5 +165,21 @@ private:
 	static inline vector<SoundBuffer> buffers;
 	
 };
+
+
+inline Texture& gTexture (const string& key)
+{
+	return Resources::getTex(key);
+}
+
+inline Sound& gSound (const string& key)
+{
+	return Resources::getSound(key);
+}
+
+inline Font& gFont (const string& key)
+{
+	return Resources::getFont(key);
+}
 
 #endif /* resourcemanager_hpp */

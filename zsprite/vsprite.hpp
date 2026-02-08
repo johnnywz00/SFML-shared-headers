@@ -12,14 +12,16 @@
 #include "zsprite.hpp"
 
 
-	/* Sprites that use velocity */
+/*
+ * Sprites that use velocity
+ */
 
-class VSprite : public ZSprite {
+class VSprite : public ZSprite
+{
 public:
-	
-	void setVelocity (float x, float y) {
-		
-		velocity = vecF(x, y);
+	void setVelocity (float x, float y)
+	{
+		velocity = {x, y};
 		if (speedClamp && mag() < speedClamp)
 			velocity = vecf(0, 0);
 	}
@@ -44,7 +46,7 @@ public:
 		}
 		auto vp = vecF(mag, czdg(direc));
 		velocity = toRect(vp);
-	 }
+	}
 
 	void setVelocityP (vecF v)
 	{
@@ -64,7 +66,7 @@ public:
 		velocity += v;
 		if (speedClamp && mag() < speedClamp)
 			velocity = vecf(0, 0);
-	 }
+	}
 
 	void addVelocityP (float mag, float direc)
 	{
@@ -133,21 +135,18 @@ public:
 	
 	void backUp (float units)
 	{
-		vecF v = vecF(units, czdg(direc() + 180));
+		vecF v {units, czdg(direc() + 180)};
 		s.move(toRect(v));
 	}
 	
 	
-	vecF    velocity = vecF(0.f, 0.f);
+	vecF    velocity;
 	float   friction = .13;		// val if friction is subtracted per frame
 	float   xfriction = .85;	// val if friction is multiplied per frame
 	float	speedClamp = 0;
 	float	maxSpeed = 999;
 
-};	// end class
-
-
-
+};	// end class VSprite
 
 
 #endif /* vsprite_hpp */

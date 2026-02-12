@@ -43,10 +43,67 @@ using namespace sf;
 		PAUSE1; \
 	}
 
-#define scrw SCRW()
-#define scrh SCRH()
-#define scrcx SCRCX()
-#define scrcy SCRCY()
+class ScreenDimensions
+{
+public:
+	static float screenWidth()
+	{
+		if (!inited)
+			init();
+		return width;
+	}
+	
+	static float screenHeight()
+	{
+		if (!inited)
+			init();
+		return height;
+	}
+	
+	static float screenCenterX()
+	{
+		if (!inited)
+			init();
+		return centerX;
+	}
+	
+	static float screenCenterY()
+	{
+		if (!inited)
+			init();
+		return centerY;
+	}
+
+private:
+	static void init()
+	{
+		VideoMode mode;
+		auto fsmodes = VideoMode::getFullscreenModes();
+		if (fsmodes.size())
+			mode = fsmodes[0];
+		else mode = VideoMode::getDesktopMode();
+		width = mode.width;
+		height = mode.height;
+		centerX = width / 2.f;
+		centerY = height / 2.f;
+		inited = true;
+	}
+	
+	inline static float	width
+						, height
+						, centerX
+						, centerY
+	;
+	inline static bool inited = false;
+};	// end ScreenDimensions
+
+#define scrw ScreenDimensions::screenWidth()
+#define scrh ScreenDimensions::screenHeight()
+#define scrcx ScreenDimensions::screenCenterX()
+#define scrcy ScreenDimensions::screenCenterY()
+
+
+
 
 inline bool isCmdPressed () { return iKP(LSystem) || iKP(RSystem); }
 

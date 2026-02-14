@@ -2266,7 +2266,7 @@ inline Color randomColorMaxSat (int maxSat)
 	return randomRangedHSB({0, 255}, {0, maxSat}, {0, 255});
 }
 
-inline Color colorWithRandDeviation (const Color& c, int dev)
+inline Color colorWithRandDeviation (Color& c, int dev)
 {
 	if (dev == 0)
 		return c;
@@ -2397,6 +2397,13 @@ inline Color decreaseBrightness (const Color& c, int inc=1)
 	auto col { rgbToHsb(c) };
 	col[2] = decm(col[2], inc, 0);
 	return hsbToRgb(col);
+}
+
+inline Color withAlpha (const Color& c, int a)
+{
+	Color col = c;
+	col.a = clamp(a, 0, 255);
+	return col;
 }
 
 

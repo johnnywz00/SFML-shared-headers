@@ -348,6 +348,13 @@ inline string stripExtension (const string& fname)
 	return fname.substr(0, lastdot);
 }
 
+inline string toUpper (string& str)
+{
+	for (auto& ch : str)
+		ch = toupper(ch);
+	return str;
+}
+
 template<class T>
 void resetGetline(T& fs)
 {

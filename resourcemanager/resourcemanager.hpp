@@ -162,8 +162,7 @@ private:
 	
 	static inline map<string, Sound> soundMap;
 	
-	static inline vector<SoundBuffer> buffers;
-	
+	static inline vector<SoundBuffer> buffers;	
 };
 
 

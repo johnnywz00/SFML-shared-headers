@@ -2435,7 +2435,9 @@ inline Color withAlpha (const Color& c, int a)
 #define DRABCYAN Color(186, 236, 237)
 #define BUTTERSKY Color(255, 255, 150)
 #define CHARCOAL Color(20, 20, 24)
+#define CAPPUCCINO Color(78, 50, 2)
 #define MUTEDGRASS Color(170, 215, 143)
+#define GRASSGREEN Color(65, 155, 63)
 
 
 

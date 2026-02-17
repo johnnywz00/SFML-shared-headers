@@ -16,6 +16,7 @@ class Resources
 public:
 	static void initialize (int argc, char* argv[])
 	{
+		cout << "Entered Resources::initialize()\n";
 		if (argc > 0 && argv[0]) {
 			exeDir = std::filesystem::absolute(argv[0]).parent_path();
 		}

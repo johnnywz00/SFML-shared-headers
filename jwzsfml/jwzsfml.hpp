@@ -175,7 +175,7 @@ inline void centerOrigin (Text& obj) {
 //	obj.setOrigin(saveOgn);
 //}
 
-inline bool ptHasValidNumbers(const vecf& pt)
+inline bool ptHasValidNumbers(const vecF& pt)
 {
 	return !(isnan(pt.x)
 			 || isnan(pt.y)
@@ -183,7 +183,7 @@ inline bool ptHasValidNumbers(const vecf& pt)
 			 || isinf(pt.y));
 }
 
-inline bool epsEquals (vecf& v1, vecf& v2, float eps = floatEps)
+inline bool epsEquals (vecF& v1, vecF& v2, float eps = floatEps)
 {
 	return epsEquals(v1.x, v2.x, eps) && epsEquals(v1.y, v2.y, eps);
 }
@@ -194,7 +194,7 @@ inline bool epsEquals (vec3f& v1, vec3f& v2, float eps = floatEps)
 			&& epsEquals(v1.z, v2.z, eps);
 }
 
-inline vecf mean (vecf v1, vecf v2)
+inline vecF mean (vecF v1, vecF v2)
 {
 	return v1 + (v2 - v1) / 2.f;
 }
@@ -373,12 +373,12 @@ inline void simpleOutline (Text& t, Color c=Color::Black)
 	t.setOutlineColor(c);
 }
 
-inline vecf rectCenter (const FloatRect& rect)
+inline vecF rectCenter (const FloatRect& rect)
 {
-	return vecf(rect.left + rect.width / 2, rect.top + rect.height / 2);
+	return vecF(rect.left + rect.width / 2, rect.top + rect.height / 2);
 }
 
-inline vecf rectCenter (const RectangleShape& rect)
+inline vecF rectCenter (const RectangleShape& rect)
 {
 	return rectCenter(rect.getGlobalBounds());
 }
@@ -388,7 +388,7 @@ inline FloatRect rectWithAddedMarginOf (const FloatRect& rect, float margin)
 	return FloatRect(rect.left - margin, rect.top - margin, rect.width + margin * 2, rect.height + margin * 2);
 }
 
-inline float triangleArea (const vecf& p1, const vecf& p2, const vecf& p3)
+inline float triangleArea (const vecF& p1, const vecF& p2, const vecF& p3)
 {
 	float base = hyp(p1, p2);
 	float ht = sind(angleBetween(toPolar(p2 - p1).y, toPolar(p3 - p1).y)) * hyp(p1, p3);
@@ -399,8 +399,8 @@ inline float triangleArea (const vecf& p1, const vecf& p2, const vecf& p3)
 class VecfMM
 {
 public:
-	VecfMM(vecf v) : vec(v) { }
-	vecf vec;
+	VecfMM(vecF v) : vec(v) { }
+	vecF vec;
 	bool operator<(const VecfMM& other) const
 	{
 		if (vec.x == other.vec.x)
@@ -417,19 +417,19 @@ class Textbox : public Drawable
 {
 public:
 	Textbox() { }
-	Textbox(Font& font, vecf pos = {0, 0}, uint charSize = 12)
+	Textbox(Font& font, vecF pos = {0, 0}, uint charSize = 12)
 	{
 		tbox.setSize({200, 20});
 		tbox.setOutlineThickness(1);
 		tbox.setOutlineColor(Color(165, 149, 130));
 		tbox.setFillColor(Color(255, 255, 255, 60));
-		highlight.setSize(tbox.getSize() + vecf{8, 8});
+		highlight.setSize(tbox.getSize() + vecF{8, 8});
 		highlight.setFillColor(Color(255, 218, 169, 90));
 		setPosition(pos);
 		boxTxt.setFont(font);
 		boxTxt.setCharacterSize(charSize);
 		boxTxt.setFillColor(Color(57, 65, 111));
-		cursor.setSize(vecf(1, tbox.getSize().y - borderOffset.y * 2));
+		cursor.setSize(vecF(1, tbox.getSize().y - borderOffset.y * 2));
 		cursor.setFillColor(Color::Red);
 		moveCursorToTxtEnd();
 	}
@@ -470,10 +470,10 @@ public:
 		boxTxt.setString(str);
 	}
 	
-	void setPosition(vecf pos)
+	void setPosition(vecF pos)
 	{
 		tbox.setPosition(pos);
-		highlight.setPosition(pos - vecf{4, 4});
+		highlight.setPosition(pos - vecF{4, 4});
 		boxTxt.setPosition(tbox.gP() + borderOffset);
 		moveCursorToTxtEnd();
 	}
@@ -484,7 +484,7 @@ public:
 	RectangleShape		cursor;
 	RectangleShape		highlight;
 	Text				boxTxt;
-	vecf				borderOffset {2, 2};
+	vecF				borderOffset {2, 2};
 	bool				isActive;
 	bool				onlyShowText = false;
 	string				name;
@@ -563,48 +563,48 @@ struct Line
 {
 	Line ()
 	{
-		Line(vecf{0, 0}, vecf{1000, 0});
+		Line(vecF{0, 0}, vecF{1000, 0});
 	}
 	
 	Line (const Line& l) : Line(l.pt1, l.pt2) {	}
 	
-	Line (const vecf& p1, const vecf& p2)
+	Line (const vecF& p1, const vecF& p2)
 		: pt1(p1)
 		, pt2(p2)
 	{
 		setValuesFromTwoPoints(pt1, pt2);
 	}
 	
-	Line (float sl, const vecf p1)
+	Line (float sl, const vecF p1)
 		: slope(sl)
 		, pt1(p1)
 	{
 		if (std::isinf(slope))
-			pt2 = vecf(pt1.x, pt1.y + 1000);
-		else pt2 = pt1 + vecf(1000, 1000 * slope);
+			pt2 = vecF(pt1.x, pt1.y + 1000);
+		else pt2 = pt1 + vecF(1000, 1000 * slope);
 		setValuesFromTwoPoints(pt1, pt2);
 	}
 	
-	bool yIsLessThan (vecf pt) const
+	bool yIsLessThan (vecF pt) const
 	{
 		if (isVertical())
 			return false; ///// ??
 		return pt.y > slope * pt.x + yIcpt;
 	}
 	
-	bool xIsLessThan (vecf pt) const
+	bool xIsLessThan (vecF pt) const
 	{
 		if (isHorizontal())
 			return false; //// ??
 		return pt.x > invSlope * pt.y + xIcpt;
 	}
 	
-	bool yIsGreaterThan (vecf pt) const
+	bool yIsGreaterThan (vecF pt) const
 	{
 		return !yIsLessThan(pt);	// includes equality
 	}
 	
-	bool xIsGreaterThan (vecf pt) const
+	bool xIsGreaterThan (vecF pt) const
 	{
 		return !xIsLessThan(pt);
 	}
@@ -625,7 +625,7 @@ struct Line
 		return isVertical() || isHorizontal();
 	}
 	
-	virtual bool containsPoint (vecf pt) const
+	virtual bool containsPoint (vecF pt) const
 	{
 		if (isVertical())
 			return epsEquals(pt.x, xIcpt);
@@ -654,18 +654,18 @@ struct Line
 		return invSlope * y + xIcpt;
 	}
 	
-	vecf getPtWhenX (float x) const
+	vecF getPtWhenX (float x) const
 	{
 		if (isVertical() && !epsEquals(x, xIcpt))
 				return {NAN, NAN};
-		return vecf {x, getYWhenX(x)};
+		return vecF {x, getYWhenX(x)};
 	}
 	
-	vecf getPtWhenY (float y) const
+	vecF getPtWhenY (float y) const
 	{
 		if (isHorizontal() && !epsEquals(y, yIcpt))
 				return {NAN, NAN};
-		return vecf {getXWhenY(y), y};
+		return vecF {getXWhenY(y), y};
 	}
 
 	bool isParallelWith (const Line& l) const
@@ -689,14 +689,14 @@ struct Line
 		else return epsEquals(-invSlope, l.slope, floatEps, true);
 	}
 	
-	vecf intersectionPointWith (const Line& l) const
+	vecF intersectionPointWith (const Line& l) const
 	{
 		//RETURN WHAT FOR COLLINEARITY
 		if (isVertical()) {
 			if (l.isVertical()) {
 				if (epsEquals(xIcpt, l.xIcpt))
-					return vecf(INFINITY, INFINITY);
-				return vecf{NAN, NAN};
+					return vecF(INFINITY, INFINITY);
+				return vecF{NAN, NAN};
 			}
 			return l.getPtWhenX(xIcpt);
 		}
@@ -707,15 +707,15 @@ struct Line
 		if (epsEquals(denom, 0)) {
 			/* Lines are parallel. */
 			if (epsEquals(xIcpt, l.xIcpt))
-				return vecf(INFINITY, INFINITY);
-			return vecf{NAN, NAN};   // throw error
+				return vecF(INFINITY, INFINITY);
+			return vecF{NAN, NAN};   // throw error
 		}
 		float x = (l.yIcpt - yIcpt) / denom;
 		float y = (slope * l.yIcpt - l.slope * yIcpt) / denom;
-		return vecf {x, y};
+		return vecF {x, y};
 	}
 	
-	Line perpendicularLineThrough (const vecf& pt) const
+	Line perpendicularLineThrough (const vecF& pt) const
 	{
 		if (isVertical())
 			return Line(0.f, pt);
@@ -724,7 +724,7 @@ struct Line
 		else return Line(-invSlope, pt);
 	}
 	
-	Line parallelLineThrough (const vecf& pt) const
+	Line parallelLineThrough (const vecF& pt) const
 	{
 		return Line(slope, pt);
 	}
@@ -734,19 +734,19 @@ struct Line
 		return Line(slope, pt1 + pVec(offs, normal));
 	}
 	
-	vecf pointPerpendicularTo (const vecf& pt) const
+	vecF pointPerpendicularTo (const vecF& pt) const
 	{
 		auto line_ { perpendicularLineThrough(pt) };
 		return intersectionPointWith(line_);
 	}
 	
-	float perpDistanceTo (const vecf& pt) const
+	float perpDistanceTo (const vecF& pt) const
 	{
 		return hyp(pt, pointPerpendicularTo(pt));
 	}
 	
 		/* confirm that self.containsPoint(pt) before using */
-	vecf pointPlusDistance (const vecf& pt, float dist) const
+	vecF pointPlusDistance (const vecF& pt, float dist) const
 	{
 		if (!containsPoint(pt))
 			return {NAN, NAN};
@@ -759,7 +759,7 @@ struct Line
 	
 
 private:
-	void setValuesFromTwoPoints (vecf p1, vecf p2)
+	void setValuesFromTwoPoints (vecF p1, vecF p2)
 	{
 		float xDif = p2.x - p1.x;
 		float yDif = p2.y - p1.y;
@@ -788,7 +788,7 @@ private:
 	}
 
 public:
-	vecf 		pt1,
+	vecF 		pt1,
 				pt2
 	;
 	float		slope,
@@ -817,7 +817,7 @@ struct LineSegment : public Line
 		ctorBody(s, e);
 	}
 	
-	LineSegment (const vecf& s, const vecf& e)
+	LineSegment (const vecF& s, const vecF& e)
 		: Line(s, e)
 		, line(s, e)
 	{
@@ -826,7 +826,7 @@ struct LineSegment : public Line
 	
 	LineSegment () : LineSegment({0,0}, {1,0}) { }
 	
-	void ctorBody (const vecf& s, const vecf& e)
+	void ctorBody (const vecF& s, const vecF& e)
 	{
 		mid = s + (e - s) / 2.f;
 		length = hyp(s, e);
@@ -840,7 +840,7 @@ struct LineSegment : public Line
 						   max(maxy - miny, 1.f));
 	}
 	
-	bool containsPoint (vecf pt) const override
+	bool containsPoint (vecF pt) const override
 	{
 		if (!isOrBetween(pt.x, minx, maxx)
 			|| !isOrBetween(pt.y, miny, maxy))
@@ -850,7 +850,7 @@ struct LineSegment : public Line
 		return epsEquals(pt.y, slope * pt.x + yIcpt);
 	}
 	
-	bool intersectsWith (const Line& other, vecf* isctPt = nullptr) const
+	bool intersectsWith (const Line& other, vecF* isctPt = nullptr) const
 	{
 		auto pt = line.intersectionPointWith(other);
 		if (isctPt)
@@ -862,7 +862,7 @@ struct LineSegment : public Line
 		// WORK
 	}
 	
-	bool intersectsWith (const LineSegment& other, vecf* isctPt = nullptr) const
+	bool intersectsWith (const LineSegment& other, vecF* isctPt = nullptr) const
 	{
 		auto pt = line.intersectionPointWith(other.line);
 		if (isctPt)
@@ -877,10 +877,10 @@ struct LineSegment : public Line
 	bool intersectsWith (const FloatRect& rect) const
 	{
 		//add param for returning isctPts
-		vecf tl {rect.left, rect.top};
-		vecf tr {rect.left + rect.width - 1, rect.top};
-		vecf br {rect.left + rect.width - 1, rect.top + rect.height - 1};
-		vecf bl {rect.left, rect.top + rect.height - 1};
+		vecF tl {rect.left, rect.top};
+		vecF tr {rect.left + rect.width - 1, rect.top};
+		vecF br {rect.left + rect.width - 1, rect.top + rect.height - 1};
+		vecF bl {rect.left, rect.top + rect.height - 1};
 		return intersectsWith(LineSegment(tl, tr))
 			|| intersectsWith(LineSegment(tr, br))
 			|| intersectsWith(LineSegment(br, bl))
@@ -888,7 +888,7 @@ struct LineSegment : public Line
 	}
 	
 	//CREATE AND OVERRIDE FROM LINE VERSION
-	bool intersectsWith (const Arc& arc, vector<vecf>* isctPts = nullptr) const
+	bool intersectsWith (const Arc& arc, vector<vecF>* isctPts = nullptr) const
 	{
 		auto pts = intersectionPointsWith(arc);
 		if (isctPts)
@@ -898,9 +898,9 @@ struct LineSegment : public Line
 	
 	//CREATE AND OVERRIDE FROM LINE VERSION
 	//REDO after study and own implementation
-	vector<vecf> intersectionPointsWith (const Arc& arc) const ;
+	vector<vecF> intersectionPointsWith (const Arc& arc) const ;
 	
-	bool isPerpendicularToPt (const vecf& pt) const
+	bool isPerpendicularToPt (const vecF& pt) const
 	{
 		auto perpPt = pointPerpendicularTo(pt);
 		return minx <= perpPt.x && maxx >= perpPt.x
@@ -962,20 +962,20 @@ inline LineSegment Line::getSegmentFromYs (float miny, float maxy) const
 struct Arc
 {
 	Arc ()
-		: center(vecf(0, 0))
+		: center(vecF(0, 0))
 		, radius(10)
 		, startAng(0)
 		, endAng(INFINITY)
 	{ }
 	
-	Arc (const vecf& ctr, float rad, float start = 0, float end = INFINITY)
+	Arc (const vecF& ctr, float rad, float start = 0, float end = INFINITY)
 		: center(ctr)
 		, radius(rad)
 		, startAng(start)
 		, endAng(end)
 	{ }
 	
-	vecf center;
+	vecF center;
 	float 	radius
 			, startAng
 			, endAng
@@ -983,20 +983,20 @@ struct Arc
 };
 
 
-inline vector<vecf> LineSegment::intersectionPointsWith (const Arc& arc) const
+inline vector<vecF> LineSegment::intersectionPointsWith (const Arc& arc) const
 {
 		// IMPLEMENT
 	return {};
 }
    
 
-inline pair<Vector2f, float> circleFrom3Pts (vecf pt1, vecf pt2, vecf pt3)
+inline pair<Vector2f, float> circleFrom3Pts (vecF pt1, vecF pt2, vecF pt3)
 {
 	LineSegment seg1 {pt1, pt2};
 	LineSegment seg2 {pt1, pt3};
 	Line midline1 = seg1.perpendicularLineThrough(seg1.mid);
 	Line midline2 = seg2.perpendicularLineThrough(seg2.mid);
-	vecf center = midline1.intersectionPointWith(midline2);
+	vecF center = midline1.intersectionPointWith(midline2);
 	return make_pair(center, hyp(center, pt1));
 }
 
@@ -1004,7 +1004,7 @@ inline pair<Vector2f, float> circleFrom3Pts (vecf pt1, vecf pt2, vecf pt3)
 
 inline bool rotatedContains (RectangleShape& r, float x, float y)
 {
-   vecf pt {x, y};
+   vecF pt {x, y};
    float oldRot = r.getRotation();
 	   /*
 		* If the sprite is rectilinear, just return the
@@ -1026,7 +1026,7 @@ inline bool rotatedContains (RectangleShape& r, float x, float y)
 	   /* Return the sprite to its proper rotation */
    r.setRotation(oldRot);
    
-   vecf topL { rect.left, rect.top },
+   vecF topL { rect.left, rect.top },
 		topR { rect.left + rect.width, rect.top },
 		botR { rect.left + rect.width, rect.top + rect.height },
 		botL { rect.left, rect.top + rect.height };
@@ -1035,7 +1035,7 @@ inline bool rotatedContains (RectangleShape& r, float x, float y)
 		* Store the polar vectors from the origin to each (rectified)
 		* corner so we can simply add the degrees of rotation to them
 		*/
-   vecf tlDif = topL - ogn,
+   vecF tlDif = topL - ogn,
 		trDif = topR - ogn,
 		brDif = botR - ogn,
 		blDif = botL - ogn;
@@ -1047,7 +1047,7 @@ inline bool rotatedContains (RectangleShape& r, float x, float y)
 		* Compute where the rotated corners of the original bounding
 		* box are now located
 		*/
-   vecf rotTl = ogn + toRect(tlDif.x, czdg(tlDif.y + oldRot)),
+   vecF rotTl = ogn + toRect(tlDif.x, czdg(tlDif.y + oldRot)),
 		rotTr = ogn + toRect(trDif.x, czdg(trDif.y + oldRot)),
 		rotBr = ogn + toRect(brDif.x, czdg(brDif.y + oldRot)),
 		rotBl = ogn + toRect(blDif.x, czdg(blDif.y + oldRot));
@@ -1093,7 +1093,7 @@ public:
 		sP(pos);
 	}
 	
-	VxShape (const vecf& pos, Color c)
+	VxShape (const vecF& pos, Color c)
 	{
 		setup(c);
 		sP(pos);
@@ -1124,7 +1124,7 @@ public:
 		hl.move(x, y);
 	}
 
-	void move (vecf dif)
+	void move (vecF dif)
 	{
 		vx.move(dif);
 		hl.move(dif);
@@ -1136,13 +1136,13 @@ public:
 		hl.setPosition(x, y);
 	}
 
-	void setPosition (vecf pos)
+	void setPosition (vecF pos)
 	{
 		vx.setPosition(pos);
 		hl.setPosition(pos);
 	}
 	
-	vecf getPosition () { return vx.getPosition(); }
+	vecF getPosition () { return vx.getPosition(); }
 
 	CircleShape     	vx
 						, hl	// highlight
@@ -1181,7 +1181,7 @@ public:
 	void storeOrigin ()
 	{
 		FloatRect bounds = getBounds();
-		vecf center { bounds.left + bounds.width / 2,
+		vecF center { bounds.left + bounds.width / 2,
 			bounds.top + bounds.height / 2};
 		origin = center;
 	}
@@ -1190,7 +1190,7 @@ public:
 	{
 		storeOrigin();
 		originalDifs.clear();
-		scale_ = vecf(1, 1);
+		scale_ = vecF(1, 1);
 		rotation_ = 0;
 		forNum (getVertexCount()) {
 			auto& vx = self[i];
@@ -1212,17 +1212,17 @@ public:
 	
 	void setScale (float fx, float fy)
 	{
-		scale_ = vecf(fx, fy);
+		scale_ = vecF(fx, fy);
 		executeTransform_();
 	}
 	
-	void setPosition (vecf pos)
+	void setPosition (vecF pos)
 	{
 		origin = pos;
 		executeTransform_();
 	}
 	
-	void move (vecf dif)
+	void move (vecF dif)
 	{
 		origin += dif;
 		executeTransform_();
@@ -1238,7 +1238,7 @@ public:
 	
 	bool rotatedContains (float x, float y)
 	{
-		vecf pt {x, y};
+		vecF pt {x, y};
 		float oldRot = rotation_;
 			/*
 			 * If the sprite is rectilinear, just return the
@@ -1260,7 +1260,7 @@ public:
 			/* Return the VA to its proper rotation */
 		setRotation(oldRot);
 		
-		vecf 	topL { rect.left, rect.top },
+		vecF 	topL { rect.left, rect.top },
 				topR { rect.left + rect.width, rect.top },
 				botR { rect.left + rect.width, rect.top + rect.height },
 				botL { rect.left, rect.top + rect.height };
@@ -1269,7 +1269,7 @@ public:
 			 * Store the polar vectors from the origin to each (rectified)
 			 * corner so we can simply add the degrees of rotation to them
 			 */
-		vecf 	tlDif = topL - ogn,
+		vecF 	tlDif = topL - ogn,
 				trDif = topR - ogn,
 				brDif = botR - ogn,
 				blDif = botL - ogn;
@@ -1281,7 +1281,7 @@ public:
 			 * Compute where the rotated corners of the original bounding
 			 * box are now located
 			 */
-		vecf 	rotTl = ogn + toRect(tlDif.x, czdg(tlDif.y + oldRot)),
+		vecF 	rotTl = ogn + toRect(tlDif.x, czdg(tlDif.y + oldRot)),
 				rotTr = ogn + toRect(trDif.x, czdg(trDif.y + oldRot)),
 				rotBr = ogn + toRect(brDif.x, czdg(brDif.y + oldRot)),
 				rotBl = ogn + toRect(blDif.x, czdg(blDif.y + oldRot));
@@ -1323,16 +1323,16 @@ public:
 		}
 	}
 
-	vecf getPolarFromOrigin (Vertex& v)
+	vecF getPolarFromOrigin (Vertex& v)
 	{
 		auto dif = v.position - origin;
 		return toPolar(dif);
 	}
 
-	vecf 				origin;
-	vecf				scale_;
+	vecF 				origin;
+	vecF				scale_;
 	float				rotation_;
-	map<Vertex*, vecf>	originalDifs;
+	map<Vertex*, vecF>	originalDifs;
 	
 };
 
@@ -1353,7 +1353,7 @@ public:
 				target.draw(d);
 	}
 	
-	void append (vecf pos, Color vxColor=Color::Black, Color shapeColor=Color::Black)
+	void append (vecF pos, Color vxColor=Color::Black, Color shapeColor=Color::Black)
 	{
 		Vertex vx {pos, vxColor};
 		VertexArray::append(vx);
@@ -1361,7 +1361,7 @@ public:
 		dots.push_back(sh);
 	}
 	
-	void moveVx (VxShape& sh, vecf dif)
+	void moveVx (VxShape& sh, vecF dif)
 	{
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
@@ -1371,14 +1371,14 @@ public:
 		}
 	}
 	
-	void moveVx (int i, vecf dif)
+	void moveVx (int i, vecF dif)
 	{
 		dots[i].sP(dots[i].gP().x + dif.x, dots[i].gP().y + dif.y);
 		self[i].position = dots[i].gP();
 
 	}
 	
-	void setVxPos (VxShape& sh, vecf pos)
+	void setVxPos (VxShape& sh, vecF pos)
 	{
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
@@ -1388,7 +1388,7 @@ public:
 		}
 	}
 
-	void setVxPos (int i, vecf pos)
+	void setVxPos (int i, vecF pos)
 	{
 		dots[i].sP(pos);
 		self[i].position = pos;
@@ -1410,7 +1410,7 @@ public:
 		eraseVertexAt(i);
 	}
 	
-	void insertVxBefore (VxShape& sh, vecf pos, Color vxColor=Color::Black, Color shapeColor=Color::Black)
+	void insertVxBefore (VxShape& sh, vecF pos, Color vxColor=Color::Black, Color shapeColor=Color::Black)
 	{
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
@@ -1421,14 +1421,14 @@ public:
 		}
 	}
 	
-	void insertVxAt (size_t idx, vecf pos, Color vxColor=Color::Black, Color shapeColor=Color::Black)
+	void insertVxAt (size_t idx, vecF pos, Color vxColor=Color::Black, Color shapeColor=Color::Black)
 	{
 		VxShape sh {pos, shapeColor};
 		dots.insert(dots.begin() + idx, sh);
 		insertVertexAt(idx, pos, vxColor);
 	}
 	
-	void insertVertexAt (size_t idx, vecf pos, Color vxColor=Color::Black)
+	void insertVertexAt (size_t idx, vecF pos, Color vxColor=Color::Black)
 	{
 		VertexArray::append(Vertex());
 		for (size_t i = getVertexCount() - 1; i >= idx; --i) {
@@ -1960,7 +1960,7 @@ public:
 class DbgPoint : public Drawable
 {
 public:
-	DbgPoint(const vecf& pt, string s = "", Font* font = nullptr)
+	DbgPoint(const vecF& pt, string s = "", Font* font = nullptr)
 	{
 		c1.setRadius(5);
 		c2.setRadius(10);
@@ -2028,7 +2028,7 @@ struct Vert
 		controls.clear();
 	}
 	
-	void setPosition(vecf pos, bool moveControls = false)
+	void setPosition(vecF pos, bool moveControls = false)
 	{
 		auto dif = pos - s.gP();
 		s.sP(pos);
@@ -2054,9 +2054,9 @@ struct Vert
 
 
 
-vector<vecf> getSplinePts (vector<Vert>& verts, bool connectEnds = true, int divisions = 100)
+vector<vecF> getSplinePts (vector<Vert>& verts, bool connectEnds = true, int divisions = 100)
 {
-	vector<vecf> pts;
+	vector<vecF> pts;
 	float divMultiplier = 1.f / (float)divisions;
 	auto sz = verts.size();
 		// no spline to draw if only one or zero points created
@@ -2076,50 +2076,50 @@ vector<vecf> getSplinePts (vector<Vert>& verts, bool connectEnds = true, int div
 				pts.push_back(pos2);
 		}
 		else if (v.controls.size() == 1) {   // one control point: quadratic curve
-			vecf c1 = v.controls[0].s.gP();
-			vecf p1c1 = c1 - pos1;
-			vecf c2p2 = pos2 - c1;
-			vecf inc1 = p1c1 * divMultiplier;
-			vecf inc3 = c2p2 * divMultiplier;
+			vecF c1 = v.controls[0].s.gP();
+			vecF p1c1 = c1 - pos1;
+			vecF c2p2 = pos2 - c1;
+			vecF inc1 = p1c1 * divMultiplier;
+			vecF inc3 = c2p2 * divMultiplier;
 			for (float j = 1; j <= divisions; ++j) {
 				if (j == divisions) {
 					pts.push_back(pos2);
 					break;
 				}
-				vecf pt1 = pos1 + inc1 * j;
-				vecf pt3 = c1 + inc3 * j;
-				vecf dif1 = pt3 - pt1;
-				vecf incd1 = dif1 * divMultiplier;
-				vecf pt6 = pt1 + vecf(incd1.x * j, incd1.y * j);
+				vecF pt1 = pos1 + inc1 * j;
+				vecF pt3 = c1 + inc3 * j;
+				vecF dif1 = pt3 - pt1;
+				vecF incd1 = dif1 * divMultiplier;
+				vecF pt6 = pt1 + vecF(incd1.x * j, incd1.y * j);
 				
 				pts.push_back(pt6);
 			}
 		}
 		else if (v.controls.size() == 2) { // two control points: cubic curve
-			vecf c1 = v.controls[0].s.gP();
-			vecf c2 = v.controls[1].s.gP();
-			vecf p1c1 = c1 - pos1;
-			vecf c1c2 = c2 - c1;
-			vecf c2p2 = pos2 - c2;
-			vecf inc1 = p1c1 * divMultiplier;
-			vecf inc2 = c1c2 * divMultiplier;
-			vecf inc3 = c2p2 * divMultiplier;
+			vecF c1 = v.controls[0].s.gP();
+			vecF c2 = v.controls[1].s.gP();
+			vecF p1c1 = c1 - pos1;
+			vecF c1c2 = c2 - c1;
+			vecF c2p2 = pos2 - c2;
+			vecF inc1 = p1c1 * divMultiplier;
+			vecF inc2 = c1c2 * divMultiplier;
+			vecF inc3 = c2p2 * divMultiplier;
 			for (float j = 1; j <= divisions; ++j) {
 				if (j == divisions) {
 					pts.push_back(pos2);
 					break;
 				}
-				vecf pt1 = pos1 + inc1 * j;
-				vecf pt2 = c1 + inc2 * j;
-				vecf pt3 = c2 + inc3 * j;
-				vecf dif1 = pt2 - pt1;
-				vecf dif2 = pt3 - pt2;
-				vecf incd1 = dif1 * divMultiplier;
-				vecf incd2 = dif2 * divMultiplier;
-				vecf pt4 = pt1 + incd1 * j;
-				vecf pt5 = pt2 + incd2 * j;
-				vecf dif3 = pt5 - pt4;
-				vecf pt6 = pt4 + vecf(dif3.x * j * divMultiplier, dif3.y * j * divMultiplier);
+				vecF pt1 = pos1 + inc1 * j;
+				vecF pt2 = c1 + inc2 * j;
+				vecF pt3 = c2 + inc3 * j;
+				vecF dif1 = pt2 - pt1;
+				vecF dif2 = pt3 - pt2;
+				vecF incd1 = dif1 * divMultiplier;
+				vecF incd2 = dif2 * divMultiplier;
+				vecF pt4 = pt1 + incd1 * j;
+				vecF pt5 = pt2 + incd2 * j;
+				vecF dif3 = pt5 - pt4;
+				vecF pt6 = pt4 + vecF(dif3.x * j * divMultiplier, dif3.y * j * divMultiplier);
 				pts.push_back(pt6);
 			}
 		}

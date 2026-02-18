@@ -118,7 +118,17 @@ private:
 			stringstream ss {line};
 			string fileName;
 			string key;
-			ss >> fileName >> key;
+			/* No error checking here; just allowing for fonts with
+			 * spaces in the names via quotes
+			 */
+			if (line[0] == '"') {
+				auto idx = line.find_last_of('"');
+				fileName = line.substr(1, idx - 1);
+				key = line.substr(line.find_first_not_of(" \t", idx + 1));
+			}
+			else
+				ss >> fileName >> key;
+			
 			if (section == "images") {
 				string filePath {(rscPath / "images" / fileName).string()};
 				if (!tex.loadFromFile(filePath))

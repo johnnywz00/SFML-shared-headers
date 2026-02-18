@@ -348,10 +348,26 @@ inline string stripExtension (const string& fname)
 	return fname.substr(0, lastdot);
 }
 
+inline string strip (string& str)
+{
+	auto idx1 = str.find_first_not_of(" \t");
+	auto idx2 = str.find_last_not_of(" \t");
+	if (idx1 == str.npos)
+		return "";
+	return str.substr(idx1, idx2 - idx1 + 1);
+}
+
 inline string toUpper (string& str)
 {
 	for (auto& ch : str)
 		ch = toupper(ch);
+	return str;
+}
+
+inline string toLower (string& str)
+{
+	for (auto& ch : str)
+		ch = tolower(ch);
 	return str;
 }
 

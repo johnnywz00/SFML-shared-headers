@@ -1,18 +1,15 @@
-//
-//  fusemanager.hpp
-//  Ravoxyd_
-//
-//  Created by John Ziegler on 9/1/24.
-//  Copyright © 2024 John Ziegler. All rights reserved.
-//
-
 #ifndef TIMEDEVENTMANAGER_HPP
 #define TIMEDEVENTMANAGER_HPP
 
 #include "jwzsfml.hpp"
 
-struct Fuse {
-    
+struct Fuse;
+using FusePtr = std::shared_ptr<Fuse>;
+using FuseWkPtr = std::weak_ptr<Fuse>;
+
+
+struct Fuse
+{
 	Fuse (float delay, bool isDaemon = false, string t = "")
 		: tag(t)
 		, isOneOff(!isDaemon)
@@ -29,7 +26,8 @@ struct Fuse {
 //		cout << "Fuse created at " << this << endl; /////////
     }
     
-	void fire () {
+	void fire ()
+	{
 //		cout<<"Fuse "<<this<<" firing: "; //////////////
 //		auto f = func;
 //		cout<<"*** ";
@@ -50,29 +48,34 @@ struct Fuse {
 		/* Skip firing a repeating event, but don't remove it, if false */
     bool isActive = true;
     Time secondsDelay;
-    Time readyTime {};
+    Time readyTime;
     string tag;
     function<void()> func;
 };
 
-using FusePtr = std::shared_ptr<Fuse>;
-using FuseWkPtr = std::weak_ptr<Fuse>;
 
 
 class TimedEventManager
 {
 public:
-	TimedEventManager(int capacity = 100)
+	TimedEventManager (int capacity = 100)
 	{
-		events.reserve(capacity);
-		eventCapacity = capacity;
+		setCapacity(capacity);
 		reset();
+	}
+	
+	void setCapacity (int cap)
+	{
+		events.reserve(cap);
+		eventCapacity = cap;
 	}
 	
     void addEvent (FusePtr ev)
 	{
-		if (events.size() > eventCapacity)
+		if (events.size() >= eventCapacity) {
+			cerr << "Rejected adding event \"" << ev->tag << "\" at " << toString(elapsed.asSeconds()) << ": full\n";
 			return;
+		}
         ev->readyTime = elapsed + ev->secondsDelay;
         events.push_back(std::move(ev));
 		if (ev->tag != "") {
@@ -82,28 +85,31 @@ public:
     
     void addEvent (float del, function<void(void)> f, bool isDaemon = false, string t = "")
 	{
-		if (events.size() > eventCapacity)
+		if (events.size() >= eventCapacity) {
+			cerr << "Rejected adding event \"" << t << "\" at " << toString(elapsed.asSeconds()) << ": full\n";
 			return;
+		}
         FusePtr ev = std::make_shared<Fuse>(del, f, isDaemon, t);
         ev->readyTime = elapsed + ev->secondsDelay;
         events.push_back(std::move(ev));
 		if (t != "") {
 			pendingTags.insert(t);
 		}
-		
 		++totalEventsCreated;
 	}
 	
 	void addEvent (float del, function<void(FusePtr)> f, bool isDaemon = false, string t = "")
 	{
-		if (events.size() > eventCapacity)
+		if (events.size() >= eventCapacity) {
+			cerr << "Rejected adding event \"" << t << "\" at " << toString(elapsed.asSeconds()) << ": full\n";
 			return;
+		}
 		FusePtr ev = std::make_shared<Fuse>(del, isDaemon, t);
 		auto f2 = [thisFuse = ev, f]() { f(thisFuse); };
 		ev->func = f2;
 		ev->readyTime = elapsed + ev->secondsDelay;
 		events.push_back(std::move(ev));
-		if (t != "") {
+		if (t.length()) {
 			pendingTags.insert(t);
 		}
 	}
@@ -201,7 +207,7 @@ public:
 	
 	bool isTagActive (const string t)
 	{
-		return pendingTags.find(t) != pendingTags.end();
+		return pendingTags.count(t);
 	}
 	
 	void reset()

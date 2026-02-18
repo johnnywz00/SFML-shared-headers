@@ -3,18 +3,22 @@
 
 #include "jwzsfml.hpp"
 
-struct Fuse;
+class Fuse;
 using FusePtr = std::shared_ptr<Fuse>;
 using FuseWkPtr = std::weak_ptr<Fuse>;
 
 
-struct Fuse
+class Fuse
 {
+public:
+	static inline bool		debugPrint = false;
+	
 	Fuse (float delay, bool isDaemon = false, string t = "")
 		: tag(t)
 		, isOneOff(!isDaemon)
 	{
 		secondsDelay = seconds(delay);
+		maybeDebugPrint("endOfCtor");
 	}
 	
     Fuse (float delay, function<void()> f, bool isDaemon = false, string t = "")
@@ -23,34 +27,49 @@ struct Fuse
 		, isOneOff(!isDaemon)
 	{
         secondsDelay = seconds(delay);
-//		cout << "Fuse created at " << this << endl; /////////
+		maybeDebugPrint("endOfCtor");
     }
     
 	void fire ()
 	{
-//		cout<<"Fuse "<<this<<" firing: "; //////////////
-//		auto f = func;
-//		cout<<"*** ";
-//		if (f) {
-//			f();
-//			cout<<"Func returned. "<<endl;
-//		}
-//		else cerr<<"Null func."<<endl; /////////
+		if (debugPrint) {
+			maybeDebugPrint("firing");
+			cout << "\n\t*** ";
+			auto f = func;
+			if (f) {
+				f();
+				cout << "Func returned" << endl;
+			}
+			else cerr << "Null func" << endl;
+		}
 		
 		if (func)
 			func();
 	}
 
-		/* Queue event for removal if true */
+	function<void()> func;
+	string tag;
+	Time secondsDelay;
+	Time readyTime;
+	/* Queue event for removal if true */
     bool isDone = false;
-		/* Set isDone after first fire if true */
+	/* Set isDone after first fire if true */
     bool isOneOff = true;
-		/* Skip firing a repeating event, but don't remove it, if false */
+	/* Skip firing a repeating event, but don't remove it, if false */
     bool isActive = true;
-    Time secondsDelay;
-    Time readyTime;
-    string tag;
-    function<void()> func;
+	
+private:
+	void maybeDebugPrint (string when)
+	{
+		if (!debugPrint)
+			return;
+		if (when == "endOfCtor")
+			cout << "Fuse created";
+		else if (when == "firing")
+			cout << "Fuse firing";
+		cout << "; tag:" << tag << " address:" << this << " time:"
+			<< tS(timestampUs()) << endl;
+	}
 };
 
 
@@ -95,7 +114,6 @@ public:
 		if (t != "") {
 			pendingTags.insert(t);
 		}
-		++totalEventsCreated;
 	}
 	
 	void addEvent (float del, function<void(FusePtr)> f, bool isDaemon = false, string t = "")
@@ -163,14 +181,12 @@ public:
 		if (events.empty()) {
 			return;
 		}
-		bool firingThisRound = false;
         for (auto& ev : events) {
             if (!ev
 				|| ev->isDone
 				|| !ev->isActive)
                 continue;
             if (ev->readyTime <= t) {
-				firingThisRound = true;
                 ev->fire();
 				// The if (ev) check seems necessary in spite of the earlier
 				// if (!ev) continue...
@@ -179,30 +195,14 @@ public:
 				else if (ev && !ev->isDone)
                     ev->readyTime = t + ev->secondsDelay;
 				// THESE LINES SEEMED TO CAUSE ERROR that didn't occur when clearing tags in the erase cycle
-//				if (ev->isDone)
-//					pendingTags.erase(ev->tag);
+				if (ev && ev->isDone)
+					pendingTags.erase(ev->tag);
             }
         }
-		if (!firingThisRound) {
-//			auto removeCond = [t](const FusePtr& ev) { return ev->isDone; };
-			// I don't know why it was originally [t], but I've removed it: watch for any glitches esp. in LogicCircuits
-			auto removeCond = [](const FusePtr& ev) { return ev->isDone; };
-
-			// SOMETHING ABOUT PENDINGTAGS was causing glitches: in LogicGates currently addEventIf has been changed to addEvent to take tags out of equation
-			for (auto& ev : events)
-				if (removeCond(ev))
-					pendingTags.erase(ev->tag);
-			// REMOVEIF SEEMED TO CAUSE errors at times that the following loop & single erase didn't cause. but after taking pending tags out of the picture, removeif seems to be working okay
-			auto removeItr = remove_if(events.begin(), events.end(), removeCond);
-			events.erase(removeItr, events.end());
-			
-			// THIS LOOP SEEMED more reliable than removeif when tags were in play, but is less efficient with all the single-erase shifting
-//			for (auto itr = events.begin(); itr != events.end(); ) {
-//				if (removeCond(*itr))
-//					itr = events.erase(itr);
-//				else ++itr;
-//			}
-		}
+	
+		auto removeCond = [](const FusePtr& ev) { return !ev || ev->isDone; };
+		auto removeItr = remove_if(events.begin(), events.end(), removeCond);
+		events.erase(removeItr, events.end());
     }
 	
 	bool isTagActive (const string t)
@@ -213,17 +213,14 @@ public:
 	void reset()
 	{
 		clearEvents();
-		resetFlagTable();
 		elapsed = Time::Zero;
+		resetFlagTable();
 	}
 	
     vector<FusePtr>    			events;
-	int							eventCapacity;
 	unordered_set<string> 		pendingTags;
     Time            			elapsed;
-	
-	//DEBUG
-	int totalEventsCreated;
+	int							eventCapacity;
 	
 	
 	/* The flag table is a sort of unlimited global boolean storage area */
@@ -237,46 +234,5 @@ public:
 	
 	unordered_set<string> 		flagTable;
 };
-
-
-/*
- 2. If the daemon manager creates the Daemon internally (e.g., you only pass interval + lambda), then:
- You need the manager to provide the Daemon pointer/reference when creating the lambda internally, so the lambda can capture this or a shared_ptr.
- For example, manager's addEvent(interval, lambda) can internally do:
- cpp
- struct Daemon {
-	 std::function<void()> func;
-	 bool isDone = false;
- };
-
- void DaemonManager::addEvent(double interval, std::function<void(Daemon&)> userLambda) {
-	 Daemon daemon;
-	 daemon.func = [thisDaemon = &daemon, userLambda]() {
-		 userLambda(*thisDaemon);
-	 };
-	 events.push_back(std::move(daemon));
- }
- Then you call:
- cpp
- daemonMgr.addEvent(0.2, [](Daemon& self) {
-	 // 'self' is the owning Daemon
-	 self.isDone = true;
-	 // progressive instructions here
- });
- 
- 
- 
- OR, CREATE DAEMON FIRST:
- auto daemon = std::make_shared<Daemon>();
- daemon->func = [daemon]() {
-	 // access owning daemon via captured shared_ptr
-	 // do progressive instructions
-	 // e.g. mark as done:
-	 daemon->isDone = true;
- };
- daemonMgr.addDaemon(daemon);
- */
-
-
 
 #endif /* fusemanager_hpp */

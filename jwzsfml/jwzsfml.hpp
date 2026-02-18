@@ -43,6 +43,14 @@ using namespace sf;
 		PAUSE1; \
 	}
 
+using DrawablePtr = shared_ptr<Drawable>;
+using DrawableWkPtr = weak_ptr<Drawable>;
+using SpritePtr = shared_ptr<Sprite>;
+using SpriteWkPtr = weak_ptr<Sprite>;
+using TextPtr = shared_ptr<Text>;
+using TextWkPtr = weak_ptr<Text>;
+
+
 class ScreenDimensions
 {
 public:
@@ -436,12 +444,13 @@ public:
 	
 	void draw(RenderTarget& w, RenderStates st) const override
 	{
-		if (!onlyShowText)
+		if (!onlyShowText) {
 			w.draw(tbox);
+			w.draw(cursor);
+		}
 		if (isActive)
 			w.draw(highlight);
 		w.draw(boxTxt);
-		w.draw(cursor);
 	}
 	
 	void clear()
@@ -468,6 +477,7 @@ public:
 		if (!str.empty())
 			str.pop_back();
 		boxTxt.setString(str);
+		moveCursorToTxtEnd();
 	}
 	
 	void setPosition(vecF pos)
@@ -497,8 +507,6 @@ private:
 };
 
 /*
- CURSOR ISN'T STAYING AT END OF CHARS AFTER BACKSPACE
- 
  -keep textboxes in map or vector, set name to map key
  
  -if single textbox is member of the State, assign to it w args in onCreate

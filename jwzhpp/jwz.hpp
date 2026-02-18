@@ -386,6 +386,11 @@ inline HRClock::time_point timestamp ()
 	return HRClock::now();
 }
 
+inline auto timestampUs ()
+{
+	return std::chrono::duration_cast<std::chrono::microseconds>(HRClock::now().time_since_epoch()).count();
+}
+
 inline unsigned long long nanosecondsBetween(HRClock::time_point t1, HRClock::time_point t2)
 {
 	return abs(std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count());

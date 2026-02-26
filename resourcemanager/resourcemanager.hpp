@@ -52,6 +52,11 @@ public:
 	
 	static Sound& getSound (string key) { return soundMap[key]; }
 	
+	static bool texExists (string key)
+	{
+		return txMap.find(key) != txMap.end();
+	}
+	
 	static Font& getDefaultFont ()
 	{
 		auto dfont = fontMap.begin();

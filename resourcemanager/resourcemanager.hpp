@@ -56,7 +56,19 @@ public:
 	{
 		return txMap.find(key) != txMap.end();
 	}
-	
+		
+	static void addTexToMap(pair<string, string> strPair)
+	{
+		Texture tex;
+		string fileName = strPair.first;
+		string filePath = (executingDir() / "resources" / "images" / fileName).string();
+		if (!tex.loadFromFile(filePath))
+			cerr << "Couldn't load texture " << filePath << endl;
+		else {
+			txMap[strPair.second] = tex;
+		}
+	}
+
 	static Font& getDefaultFont ()
 	{
 		auto dfont = fontMap.begin();
@@ -195,6 +207,11 @@ inline Sound& gSound (const string& key)
 inline Font& gFont (const string& key)
 {
 	return Resources::getFont(key);
+}
+
+inline path resourcePath ()
+{
+	return Resources::executingDir() / "resources";
 }
 
 #endif /* resourcemanager_hpp */

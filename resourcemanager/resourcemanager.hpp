@@ -60,8 +60,7 @@ public:
 	static void addTexToMap(pair<string, string> strPair)
 	{
 		Texture tex;
-		string fileName = strPair.first;
-		string filePath = (executingDir() / "resources" / "images" / fileName).string();
+		string filePath = (executingDir() / "resources" / "images" / strPair.first).string();
 		if (!tex.loadFromFile(filePath))
 			cerr << "Couldn't load texture " << filePath << endl;
 		else {

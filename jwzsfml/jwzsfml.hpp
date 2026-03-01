@@ -446,10 +446,11 @@ public:
 	{
 		if (!onlyShowText) {
 			w.draw(tbox);
+		}
+		if (isActive) {
+			w.draw(highlight);
 			w.draw(cursor);
 		}
-		if (isActive)
-			w.draw(highlight);
 		w.draw(boxTxt);
 	}
 	
@@ -502,7 +503,7 @@ public:
 private:
 	void moveCursorToTxtEnd()
 	{
-		cursor.setPosition(boxTxt.getPosition().x + boxTxt.getLocalBounds().width + 1, tbox.getPosition().y + borderOffset.y);
+		cursor.setPosition(boxTxt.getPosition().x + boxTxt.getLocalBounds().width + 2, tbox.getPosition().y + borderOffset.y);
 	}
 };
 
@@ -2233,7 +2234,7 @@ inline vector<int> rgbToHsb (float r, float g, float b)
 	vecF res = toPolar(comb);
 	h = res.y;
 	
-	intvec v{};
+	intvec v;
 	v.push_back(round(h));
 	v.push_back(round(s));
 	v.push_back(round(br));
@@ -2245,11 +2246,15 @@ inline vector<int> rgbToHsb (const Color& c)
 	return rgbToHsb(float(c.r), float(c.g), float(c.b));
 }
 
-inline Color randomColor ()
+/* If `lowThresh` is supplied, randomizing can be steered
+ * away from blacks and from fully saturated hues, which
+ * is sometimes desirable
+ */
+inline Color randomColor (int lowThresh = 0)
 {
-	int r = randRange(1, 255);
-	int g = randRange(1, 255);
-	int b = randRange(1, 255);
+	int r = randRange(lowThresh, 255);
+	int g = randRange(lowThresh, 255);
+	int b = randRange(lowThresh, 255);
 	return Color(r, g, b);
 }
 
@@ -2285,6 +2290,9 @@ inline Color colorWithRandDeviation (Color& c, int dev)
 	return randomRangedHSB(h, s, b);
 }
 
+/* The same as colorWithRandDeviation but deviations only
+ * apply to brightness and saturation, not hue
+ */
 inline Color colorDevLockHue (Color&c, int dev)
 {
 	if (dev == 0)
@@ -2404,6 +2412,20 @@ inline Color decreaseBrightness (const Color& c, int inc=1)
 {
 	auto col { rgbToHsb(c) };
 	col[2] = decm(col[2], inc, 0);
+	return hsbToRgb(col);
+}
+
+inline Color withSaturation (const Color& c, int val)
+{
+	auto col { rgbToHsb(c) };
+	col[1] = clamp(val, 0, 100);
+	return hsbToRgb(col);
+}
+
+inline Color withBrightness (const Color& c, int val)
+{
+	auto col { rgbToHsb(c) };
+	col[2] = clamp(val, 0, 100);
 	return hsbToRgb(col);
 }
 

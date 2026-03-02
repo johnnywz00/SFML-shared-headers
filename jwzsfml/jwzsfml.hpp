@@ -2472,6 +2472,7 @@ inline Color withAlpha (const Color& c, int a)
 #define CAPPUCCINO Color(78, 50, 2)
 #define MUTEDGRASS Color(170, 215, 143)
 #define GRASSGREEN Color(65, 155, 63)
+#define OLIVEGREEN Color(141, 160, 94)
 
 
 

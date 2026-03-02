@@ -1774,34 +1774,38 @@ public:
 	
 	void blur (int iterations = 1, bool useDiag = true, bool blendToTransparent = false)
 	{
+		vector<vecF> v;
+		if (useDiag)
+			v = {
+				{-1, -1}, {0, -1}, {1, -1},
+				{-1, 0},  {0, 0},  {1, 0},
+				{-1, 1},  {0, 1},  {1, 1}
+			
+			//						{-2, -2}, {-1, -2}, {0, -2}, {1, -2}, {2, -2},
+			//						{-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {2, -1},
+			//						{-2, 0}, {-1, 0}, {0, 0}, {1, 0}, {2, 0},
+			//						{-2, 1}, {-1, 1}, {0, 1}, {1, 1}, {2, 1},
+			//						{-2, 2}, {-1, 2}, {0, 2}, {1, 2}, {2, 2}
+			};
+		else v = {
+						 {0, -1},
+				{-1, 0}, {0,  0}, {1, 0},
+						 {0,  1},
+		};
+		
 		int wid = getSize().x;
 		int ht = getSize().y;
 		forNum(iterations) {
 			Image tempCopy {*this};
-			for (int i = 0; i <  wid ; ++i) {
-				for (int j = 0; j <  ht ; ++j) {
+			for (int i = 0; i < wid ; ++i) {
+				for (int j = 0; j < ht ; ++j) {
 					int num = 0;
 					int red = 0, green = 0, blue = 0, alpha = 0;
-					vector<vecF> v;
-					if (useDiag) v = {
-						{-1, -1}, {0, -1}, {1, -1},
-						{-1, 0}, {0, 0}, {1, 0},
-						{-1, 1}, {0, 1}, {1, 1}
-						
-//						{-2, -2}, {-1, -2}, {0, -2}, {1, -2}, {2, -2},
-//						{-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {2, -1},
-//						{-2, 0}, {-1, 0}, {0, 0}, {1, 0}, {2, 0},
-//						{-2, 1}, {-1, 1}, {0, 1}, {1, 1}, {2, 1},
-//						{-2, 2}, {-1, 2}, {0, 2}, {1, 2}, {2, 2}
-					};
-					else v = {
-								 {0, -1},
-						{-1, 0}, {0,  0}, {1, 0},
-								 {0,  1},
-					};
 					for (auto& coord : v) {
-						if (	i + coord.x >= 0 && i + coord.x <= wid &&
-							j + coord.y >= 0  && j + coord.y  <= ht) {
+						if (	i + coord.x >= 0
+								&& i + coord.x < wid
+								&& j + coord.y >= 0
+								&& j + coord.y < ht) {
 							Color p = getPixel(i + coord.x, j + coord.y);
 							if (!blendToTransparent && isBlank(p))
 								continue;
@@ -1812,10 +1816,10 @@ public:
 							alpha += p.a;
 						}
 					}
-					Color c = Color(int(floor(red / num)),
-									int(floor(green / num)),
-									int(floor(blue / num)),
-									int(floor(alpha / num)));
+					Color c = Color(red / num,
+									green / num,
+									blue / num,
+									alpha / num);
 					tempCopy.setPixel(i, j, c);
 				}
 			}

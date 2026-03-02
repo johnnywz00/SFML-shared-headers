@@ -496,7 +496,7 @@ public:
 	RectangleShape		highlight;
 	Text				boxTxt;
 	vecF				borderOffset {2, 2};
-	bool				isActive;
+	bool				isActive = false;
 	bool				onlyShowText = false;
 	string				name;
 	

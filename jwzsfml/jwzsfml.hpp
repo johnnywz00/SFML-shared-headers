@@ -1471,6 +1471,56 @@ public:
 
 
 
+class RoundedRectangle: public Shape
+{
+public:
+	RoundedRectangle () { cornerRadius = 10; }
+	
+	RoundedRectangle (vecF sz, float cornerRad=10)
+		: m_size(sz)
+		, cornerRadius(cornerRad)
+	{
+		update();
+	}
+	
+	void setSize (const vecF sz)
+	{
+		m_size = sz;
+		update();
+	}
+	
+	void setRadius (float r)
+	{
+		cornerRadius = r;
+		update();
+	}
+
+	virtual size_t getPointCount () const
+	{
+		return 32;
+	}
+	
+	virtual vecF getPoint (size_t i) const
+	{
+		/* Use the member cornerRadius unless it is too large for the
+		 * shape's size
+		 */
+		size_t qtr = getPointCount() / 4;
+		float rad = min(cornerRadius, min(m_size.x, m_size.y) / 2);
+		vecF cornerCenters[4] = {
+			{rad, rad}
+			, {m_size.x - rad - 1, rad}
+			, {m_size.x - rad - 1, m_size.y - rad - 1}
+			, {rad, m_size.y - rad - 1}
+		};
+		return cornerCenters[i / qtr] + pVec(rad, (180 + (i / qtr) * 90) % 360 + (i % qtr) * (90.f / float(qtr - 1)) );
+	}
+
+private:
+	vecF	m_size;
+	float	cornerRadius;
+};
+
 // FINISH
 class HexagonShape: public Shape
 {
@@ -1531,7 +1581,7 @@ public:
 		m_size = sz;
 		update();
 	}
-	
+		
 	virtual size_t getPointCount () const
 	{
 		return 8;

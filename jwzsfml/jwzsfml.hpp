@@ -191,23 +191,23 @@ inline bool ptHasValidNumbers(const vecF& pt)
 			 || isinf(pt.y));
 }
 
-inline bool epsEquals (vecF& v1, vecF& v2, float eps = floatEps)
+inline bool epsEquals (const vecF& v1, const vecF& v2, float eps = floatEps)
 {
 	return epsEquals(v1.x, v2.x, eps) && epsEquals(v1.y, v2.y, eps);
 }
 
-inline bool epsEquals (vec3f& v1, vec3f& v2, float eps = floatEps)
+inline bool epsEquals (const vec3f& v1, const vec3f& v2, float eps = floatEps)
 {
 	return epsEquals(v1.x, v2.x, eps) && epsEquals(v1.y, v2.y, eps)
 			&& epsEquals(v1.z, v2.z, eps);
 }
 
-inline vecF mean (vecF v1, vecF v2)
+inline vecF mean (const vecF& v1, const vecF& v2)
 {
 	return v1 + (v2 - v1) / 2.f;
 }
 
-inline vec3f mean (vec3f v1, vec3f v2)
+inline vec3f mean (const vec3f& v1, const vec3f& v2)
 {
 	return v1 + (v2 - v1) / 2.f;
 }
@@ -2017,13 +2017,13 @@ public:
 
 };
 
-
+inline Color withAlpha (const Color& c, int a);
 
 /* Visualize location being used by code */
 class DbgPoint : public Drawable
 {
 public:
-	DbgPoint(const vecF& pt, string s = "", Font* font = nullptr)
+	DbgPoint(const vecF& pt, string s = "", Font* font = nullptr, float txtDist=NAN)
 	{
 		c1.setRadius(5);
 		c2.setRadius(10);
@@ -2046,7 +2046,14 @@ public:
 			labelStr = s;
 			label = Text(labelStr, *font, 13);
 			label.setFillColor(Color::Black);
-			label.setPosition(pt + pVec(20, 0));
+			if (isnan(txtDist))
+				label.setPosition(pt + pVec(20, 0));
+			else {
+				auto txtPt = pt + pVec(txtDist, 270); //randRange(359));
+				label.setPosition(txtPt);
+				va.append(Vertex(pt, withAlpha(Color::Black, 150)));
+				va.append(Vertex(txtPt, withAlpha(Color::Black, 150)));
+			}
 		}
 	}
 	

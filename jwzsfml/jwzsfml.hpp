@@ -424,25 +424,26 @@ public:
 class Textbox : public Drawable
 {
 public:
-	Textbox() { }
-	Textbox(Font& font, vecF pos = {0, 0}, uint charSize = 12)
+	Textbox () { }
+	Textbox (Font& font, vecF pos = {0, 0}, uint charSize = 12)
 	{
+		// NEEDS SIZE adjustments if a larger charSize is passed:
+		// outline, highlight, cursor, cursor pos...
 		tbox.setSize({200, 20});
 		tbox.setOutlineThickness(1);
 		tbox.setOutlineColor(Color(165, 149, 130));
 		tbox.setFillColor(Color(255, 255, 255, 60));
 		highlight.setSize(tbox.getSize() + vecF{8, 8});
 		highlight.setFillColor(Color(255, 218, 169, 90));
-		setPosition(pos);
 		boxTxt.setFont(font);
 		boxTxt.setCharacterSize(charSize);
 		boxTxt.setFillColor(Color(57, 65, 111));
 		cursor.setSize(vecF(1, tbox.getSize().y - borderOffset.y * 2));
 		cursor.setFillColor(Color::Red);
-		moveCursorToTxtEnd();
+		setPosition(pos);
 	}
 	
-	void draw(RenderTarget& w, RenderStates st) const override
+	void draw (RenderTarget& w, RenderStates st) const override
 	{
 		if (!onlyShowText) {
 			w.draw(tbox);
@@ -454,25 +455,25 @@ public:
 		w.draw(boxTxt);
 	}
 	
-	void clear()
+	void clear ()
 	{
 		boxTxt.setString("");
 		moveCursorToTxtEnd();
 	}
 	
-	void setText(String text)
+	void setText (String text)
 	{
 		boxTxt.setString(text);
 		moveCursorToTxtEnd();
 	}
 	
-	void appendText(String text)  //sf::String to receive event unicode
+	void appendText (String text)  //sf::String to receive event unicode
 	{
 		boxTxt.setString(boxTxt.getString() + text);
 		moveCursorToTxtEnd();
 	}
 	
-	void deleteLastChar()
+	void deleteLastChar ()
 	{
 		string str = boxTxt.getString();
 		if (!str.empty())
@@ -481,7 +482,7 @@ public:
 		moveCursorToTxtEnd();
 	}
 	
-	void setPosition(vecF pos)
+	void setPosition (vecF pos)
 	{
 		tbox.setPosition(pos);
 		highlight.setPosition(pos - vecF{4, 4});
@@ -489,7 +490,13 @@ public:
 		moveCursorToTxtEnd();
 	}
 	
-	void setActive(bool stat) { isActive = stat; }
+	void setActive (bool stat) { isActive = stat; }
+	
+	void changeOffset (const vecF& newOffs)
+	{
+		borderOffset = newOffs;
+		setPosition(tbox.getPosition());
+	}
 	
 	RectangleShape		tbox;
 	RectangleShape		cursor;
@@ -618,29 +625,30 @@ struct Line
 		return !xIsLessThan(pt);
 	}
 	
-	bool isVertical () const
+	bool isVertical (float eps=floatEps) const
 	{
-		return std::isinf(slope);
-		// invSlope epseq 0
+//		return std::isinf(slope);
+		return epsEquals(invSlope, 0, eps);
 	}
 	
-	bool isHorizontal () const
+	bool isHorizontal (float eps=floatEps) const
 	{
-		return epsEquals(slope, 0);
+		return epsEquals(slope, 0, eps);
 	}
 	
-	bool isRectilinear () const
+	bool isRectilinear (float eps=floatEps) const
 	{
-		return isVertical() || isHorizontal();
+		return isVertical(eps) || isHorizontal(eps);
 	}
 	
-	virtual bool containsPoint (vecF pt) const
+	virtual bool containsPoint (vecF pt, float eps=floatEps) const
 	{
-		if (isVertical())
-			return epsEquals(pt.x, xIcpt);
-		else if (isHorizontal())
-			return epsEquals(pt.y, yIcpt);
-		return epsEquals(pt.y, slope * pt.x + yIcpt);
+		if (isVertical(eps))
+			return epsEquals(pt.x, xIcpt, eps);
+		else if (isHorizontal(eps))
+			return epsEquals(pt.y, yIcpt, eps);
+		return epsEquals(pt.y, slope * pt.x + yIcpt, eps);
+//		return epsEquals(pt.y, slope * pt.x + yIcpt, eps);   INVSLOPE
 	}
 	
 	float getYWhenX (float x) const
@@ -849,37 +857,41 @@ struct LineSegment : public Line
 						   max(maxy - miny, 1.f));
 	}
 	
-	bool containsPoint (vecF pt) const override
+	bool containsPoint (vecF pt, float eps=floatEps) const override
 	{
-		if (!isOrBetween(pt.x, minx, maxx)
-			|| !isOrBetween(pt.y, miny, maxy))
+		if (!isOrBetween(pt.x, minx, maxx, eps)
+			|| !isOrBetween(pt.y, miny, maxy, eps))
 			return false;
-		if (isVertical())
-			return epsEquals(pt.x, xIcpt);
-		return epsEquals(pt.y, slope * pt.x + yIcpt);
+		if (isVertical(eps))
+			return epsEquals(pt.x, xIcpt, eps);
+		return epsEquals(pt.y, slope * pt.x + yIcpt, eps);
 	}
 	
-	bool intersectsWith (const Line& other, vecF* isctPt = nullptr) const
+	bool intersectsWith (const Line& other, vecF* isctPt = nullptr, float eps=floatEps) const
 	{
 		auto pt = line.intersectionPointWith(other);
 		if (isctPt)
 			*isctPt = pt;
-		return epsLTE(minx, pt.x) && epsGTE(maxx, pt.x)
-			&& epsLTE(miny, pt.y) && epsGTE(maxy, pt.y);
+		return epsLTE(minx, pt.x, eps) && epsGTE(maxx, pt.x, eps)
+			&& epsLTE(miny, pt.y, eps) && epsGTE(maxy, pt.y, eps);
 //		return containsPoint(pt);
 		// HAD TO DIAL FLOATEPS ALL THE WAY UP TO .006 IN ORDER FOR CONTAINSPOINT TO
 		// WORK
 	}
 	
-	bool intersectsWith (const LineSegment& other, vecF* isctPt = nullptr) const
+	bool intersectsWith (const LineSegment& other, vecF* isctPt = nullptr, float eps=floatEps) const
 	{
+		/// vecF collIsct
+//		if (isCollinearWith(other)) {
+//			return     //////collIsct
+//		}
 		auto pt = line.intersectionPointWith(other.line);
 		if (isctPt)
 			*isctPt = pt;
-		return epsLTE(minx, pt.x) && epsGTE(maxx, pt.x)
-			&& epsLTE(miny, pt.y) && epsGTE(maxy, pt.y)
-			&& epsLTE(other.minx, pt.x) && epsGTE(other.maxx, pt.x)
-			&& epsLTE(other.miny, pt.y) && epsGTE(other.maxy, pt.y);
+		return epsLTE(minx, pt.x, eps) && epsGTE(maxx, pt.x, eps)
+			&& epsLTE(miny, pt.y, eps) && epsGTE(maxy, pt.y, eps)
+			&& epsLTE(other.minx, pt.x, eps) && epsGTE(other.maxx, pt.x, eps)
+			&& epsLTE(other.miny, pt.y, eps) && epsGTE(other.maxy, pt.y, eps);
 //		return containsPoint(pt) && other.containsPoint(pt);
 	}
 	
@@ -917,18 +929,47 @@ struct LineSegment : public Line
 //		return containsPoint(pointPerpendicularTo(pt));
 	}
 	
-	bool isCollinearWith (const Line& l) const
+	bool isCollinearWith (const Line& l, float eps=floatEps) const
 	{
-		if (isVertical())
-			return l.isVertical() && epsEquals(xIcpt, l.xIcpt);
-		else if (isHorizontal())
-			return l.isHorizontal() && epsEquals(yIcpt, l.yIcpt);
-		else return epsEquals(slope, l.slope) && epsEquals(line.yIcpt, l.yIcpt);
+		if (isVertical(eps))
+			return l.isVertical(eps) && epsEquals(xIcpt, l.xIcpt, eps);
+		else if (isHorizontal(eps))
+			return l.isHorizontal(eps) && epsEquals(yIcpt, l.yIcpt, eps);
+		else {
+			bool slopesMatch = abs(slope) > 1 ? epsEquals(invSlope, l.invSlope, eps) :
+			epsEquals(slope, l.slope, eps);
+			bool icptsMatch = abs(slope) > 1 ? epsEquals(xIcpt, l.xIcpt, eps) :
+			epsEquals(yIcpt, l.yIcpt, eps);
+			return slopesMatch && icptsMatch;
+		}
 	}
 	
-	bool isCollinearWith (const LineSegment& other) const
+	bool isCollinearWith (const LineSegment& other, float eps=floatEps) const
 	{
-		return isCollinearWith(other.line);
+		return isCollinearWith(other.line, eps);
+	}
+	
+	bool isOverlappingCollinearWith (const LineSegment& other, LineSegment* overlapping=nullptr, float eps=floatEps) const
+	{
+		bool ret = (isCollinearWith(other.line, eps)
+					&& (epsLTE(miny, other.miny) && maxy > other.miny
+						|| epsGTE(maxy, other.maxy) && miny < other.maxy
+						|| epsLTE(minx, other.minx) && maxx > other.minx
+						|| epsGTE(maxx, other.maxx) && minx < other.maxx));
+		if (overlapping) {
+			if (isHorizontal() || abs(slope) <= 1) {
+				auto x1 = max(minx, other.minx);
+				auto x2 = min(maxx, other.maxx);
+				*overlapping = other.line.getSegmentFromXs(x1, x2);
+			}
+			else {
+				auto y1 = max(miny, other.miny);
+				auto y2 = min(maxy, other.maxy);
+				*overlapping = other.line.getSegmentFromYs(y1, y2);
+			}
+			(*overlapping).angle = angle;
+		}
+		return ret;
 	}
 	
 	LineSegment alterLength (float len)
@@ -1719,7 +1760,19 @@ public:
 		return Image::getPixel(x, y);
 	}
 	
-	bool isBlank(Color c) { return c.a == 0; }
+	static bool isBlank(Color c) { return c.a == 0; }
+	
+	void forEachPixel (function<void(unsigned int x, unsigned int y, Color c)> func)
+	{
+		auto szx = getSize().x;
+		auto szy = getSize().y;
+		forNum(szy) {
+			forNumJ(szx) {
+				auto curPix = getPixel(j, i);
+				func(j, i, curPix);
+			}
+		}
+	}
 	
 	void fadeByAlphaVal (int val)
 	{
@@ -1849,6 +1902,8 @@ public:
 			Image tempCopy {*this};
 			for (int i = 0; i < wid ; ++i) {
 				for (int j = 0; j < ht ; ++j) {
+					if (!blendToTransparent && isBlank(getPixel(i, j)))
+						continue;
 					int num = 0;
 					int red = 0, green = 0, blue = 0, alpha = 0;
 					for (auto& coord : v) {
@@ -2049,7 +2104,7 @@ public:
 			if (isnan(txtDist))
 				label.setPosition(pt + pVec(20, 0));
 			else {
-				auto txtPt = pt + pVec(txtDist, 270); //randRange(359));
+				auto txtPt = pt + pVec(txtDist, randRange(260, 280)); //randRange(359));
 				label.setPosition(txtPt);
 				va.append(Vertex(pt, withAlpha(Color::Black, 150)));
 				va.append(Vertex(txtPt, withAlpha(Color::Black, 150)));

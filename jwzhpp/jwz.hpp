@@ -626,11 +626,6 @@ inline float mean (float a, float b) { return min(a, b) + abs(b - a) / 2; }
 
 inline float absDif (float a, float b) { return abs(b - a); }
 
-inline bool isOrBetween (float arg, float mn, float mx)
-{
-	return arg >= mn && arg <= mx;
-}
-
 /* Epsilon comparisons for floats */
 inline bool epsEquals (float a, float b, float eps = floatEps, bool disregardInfSign = false)
 {
@@ -671,18 +666,41 @@ inline bool epsEquals (vector<float> v1, vector<float> v2)
 	return true;
 }
 
-/* Finds the <= 180 angle between two given angles */
+inline bool isOrBetween (float arg, float mn, float mx, float eps=floatEps)
+{
+	return epsGTE(arg, mn, eps) && epsLTE(arg, mx, eps);
+}
+
+/* Finds the <= 180 angle between two given angles
+ * USE czdg FIRST.
+ */
 inline float angleBetween (float ang1, float ang2)
 {
 		/* If the degree values of the two angles have a difference of more than 180,
-		 * the solution angle will encompass the 0° mark. Instead of merely finding the
-		 * difference between angles for a solution, we have to add (360 - larger degree)
-		 * to the smaller degree to get the full angle
+		 * the solution angle will encompass the 0° mark.
 		 */
 	float angleDif = abs(ang1 - ang2);
-	if ( angleDif > 180)
-		return (360 - max(ang1, ang2)) + min(ang1, ang2);
-	else return angleDif;
+	if (angleDif > 180)
+		angleDif = 360 - angleDif;
+	return angleDif;
+}
+
+/* Make sure that 0 == 359.99999 for epsilon situations
+ * USE czdg FIRST.
+ */
+inline bool angEpsEquals (float ang1, float ang2, float eps=floatEps)
+{
+	return epsEquals(angleBetween(ang1, ang2), 0, eps);
+	/* Old version without angleBetween
+	 float redZone = 360 - eps;
+	 if (ang1 > redZone && ang2 < ang1 - eps) {
+	 return ((360 - ang1) + ang2) < eps;
+	 }
+	 else if (ang2 >= redZone && ang1 < ang2 - eps) {
+	 return ((360 - ang2) + ang1) < eps;
+	 }
+	 return epsEquals(ang1, ang2, eps);
+	 */
 }
 
 /* Always returns a positive magnitude */
@@ -712,20 +730,21 @@ inline bool clockwiseOf (float testAng, float refAng)
 }
 
 /* Range for inclusion begins at `startAng` and continues *clockwise* to `endAng` */
-inline bool angleIsOrFallsBetween (float testAng, float startAng, float endAng)
+inline bool angleIsOrFallsBetween (float testAng, float startAng, float endAng, float eps=floatEps)
 {
+	// COULD THERE ever be a time different eps values wanted for angEps/isOrBetw.
 	testAng = czdg(testAng);
 	startAng = czdg(startAng);
 	endAng = czdg(endAng);
-	if (epsEquals(startAng, endAng))
-		return epsEquals(testAng, startAng);
+	if (angEpsEquals(startAng, endAng, eps))
+		return angEpsEquals(testAng, startAng, eps);
 	if (startAng < endAng)
-		return isOrBetween(testAng, startAng, endAng);
-	else return testAng >= startAng
-				|| testAng <= endAng;
+		return isOrBetween(testAng, startAng, endAng, eps);
+	else return epsGTE(testAng, startAng)
+				|| epsLTE(testAng, endAng);
 }
 
-inline bool angleIsOrFallsBetweenRads (float testAng, float startAng, float endAng)
+inline bool angleIsOrFallsBetweenRads (float testAng, float startAng, float endAng, float eps=floatEps)
 {
 	testAng = czrd(testAng);
 	startAng = czrd(startAng);
@@ -833,10 +852,6 @@ int indexOf (const Cont& cont, typename Cont::value_type ele)
 			return i;
 	}
 	return -1;
-	
-	// BETTER IMPLEMENTATION?
-//	auto itr = std::find(v.begin(), v.end(), val);
-//	return itr != v.end() ? distance(v.begin(), itr) : -1;
 }
 
 template<typename Cont, typename Pred>

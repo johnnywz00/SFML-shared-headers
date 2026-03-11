@@ -342,6 +342,11 @@ inline vecF pVec (float mag, float dir)
 	return toRect(mag, dir);
 }
 
+inline float crossProd (vecF v1, vecF v2)
+{
+	return v1.x * v2.y - v1.y * v2.x;
+}
+
 inline vec3f crossProd (vec3f v1, vec3f v2)
 {
 	return {
@@ -349,6 +354,11 @@ inline vec3f crossProd (vec3f v1, vec3f v2)
 		v1.z * v2.x - v1.x * v2.z,
 		v1.x * v2.y - v1.y * v2.x
 	};
+}
+
+inline float dotProd (vecF v1, vecF v2)
+{
+	return v1.x * v2.x + v1.x + v2.x;
 }
 
 inline float dotProd (vec3f v1, vec3f v2)
@@ -571,6 +581,11 @@ public:
 };
 
 
+/* Tolerance for considering a Line vertical or horizontal.
+ * Most likely a program may set this value one time, rather
+ * than using varying values per function that checks isRectilinear()
+ */
+inline float	rectlrEps = .0001;
 
 struct LineSegment;
 struct Arc;
@@ -579,76 +594,32 @@ struct Line
 {
 	Line ()
 	{
-		Line(vecF{0, 0}, vecF{1000, 0});
+		Line(vecF{0, 0}, vecF{1, 0});
 	}
 	
 	Line (const Line& l) : Line(l.pt1, l.pt2) {	}
 	
-	Line (const vecF& p1, const vecF& p2)
+	Line (const vecF& p1, const vecF& p2, float eps=floatEps)
 		: pt1(p1)
 		, pt2(p2)
 	{
-		setValuesFromTwoPoints(pt1, pt2);
+		setValuesFromTwoPoints(pt1, pt2, eps);
 	}
 	
-	Line (float sl, const vecF p1)
-		: slope(sl)
-		, pt1(p1)
+	Line (float sl, const vecF p1, bool arg1isInv=false, float eps=floatEps)
+		: pt1(p1)
 	{
-		if (std::isinf(slope))
-			pt2 = vecF(pt1.x, pt1.y + 1000);
-		else pt2 = pt1 + vecF(1000, 1000 * slope);
-		setValuesFromTwoPoints(pt1, pt2);
-	}
-	
-	bool yIsLessThan (vecF pt) const
-	{
-		if (isVertical())
-			return false; ///// ??
-		return pt.y > slope * pt.x + yIcpt;
-	}
-	
-	bool xIsLessThan (vecF pt) const
-	{
-		if (isHorizontal())
-			return false; //// ??
-		return pt.x > invSlope * pt.y + xIcpt;
-	}
-	
-	bool yIsGreaterThan (vecF pt) const
-	{
-		return !yIsLessThan(pt);	// includes equality
-	}
-	
-	bool xIsGreaterThan (vecF pt) const
-	{
-		return !xIsLessThan(pt);
-	}
-	
-	bool isVertical (float eps=floatEps) const
-	{
-//		return std::isinf(slope);
-		return epsEquals(invSlope, 0, eps);
-	}
-	
-	bool isHorizontal (float eps=floatEps) const
-	{
-		return epsEquals(slope, 0, eps);
-	}
-	
-	bool isRectilinear (float eps=floatEps) const
-	{
-		return isVertical(eps) || isHorizontal(eps);
-	}
-	
-	virtual bool containsPoint (vecF pt, float eps=floatEps) const
-	{
-		if (isVertical(eps))
-			return epsEquals(pt.x, xIcpt, eps);
-		else if (isHorizontal(eps))
-			return epsEquals(pt.y, yIcpt, eps);
-		return epsEquals(pt.y, slope * pt.x + yIcpt, eps);
-//		return epsEquals(pt.y, slope * pt.x + yIcpt, eps);   INVSLOPE
+		if (arg1isInv) {
+			if (isinf(sl))
+				pt2 = vecF(pt1.x + 1000, pt1.y);
+			else pt2 = pt1 + vecF(1000 * sl, 1000);
+		}
+		else {
+			if (isinf(sl))
+				pt2 = vecF(pt1.x, pt1.y + 1000);
+			else pt2 = pt1 + vecF(1000, 1000 * sl);
+		}
+		setValuesFromTwoPoints(pt1, pt2, eps);
 	}
 	
 	float getYWhenX (float x) const
@@ -656,8 +627,10 @@ struct Line
 		if (isVertical()) {
 			if (!epsEquals(x, xIcpt))
 				return NAN;
-			return 0; ///// another approach? callers check vertical first
+			return INFINITY;
 		}
+		else if (abs(slope) > 1)
+			return x / invSlope - xIcpt / invSlope;
 		return slope * x + yIcpt;
 	}
 	
@@ -666,49 +639,127 @@ struct Line
 		if (isHorizontal()) {
 			if (!epsEquals(y, yIcpt))
 				return NAN;
-			return 0; ///// another approach?
+			return INFINITY;
 		}
+		else if (abs(invSlope) > 1)
+			return y / slope - yIcpt / slope;
 		return invSlope * y + xIcpt;
 	}
 	
 	vecF getPtWhenX (float x) const
 	{
 		if (isVertical() && !epsEquals(x, xIcpt))
-				return {NAN, NAN};
+			return {NAN, NAN};
 		return vecF {x, getYWhenX(x)};
 	}
 	
 	vecF getPtWhenY (float y) const
 	{
 		if (isHorizontal() && !epsEquals(y, yIcpt))
-				return {NAN, NAN};
+			return {NAN, NAN};
 		return vecF {getXWhenY(y), y};
 	}
-
-	bool isParallelWith (const Line& l) const
+	
+	/* Callers check for vertical first; prefer comparing x
+	 * when abs(slope) > 1
+	 */
+	bool yIsLessThan (vecF pt, float eps=floatEps) const
 	{
-		/* Use the "disregard infinity sign" parameter so that all vertical
-		 * lines will register as parallel.
-		 */
+		if (isVertical()) // default epsilon used
+			return pt1.y < pt2.y ? (pt.x > xIcpt) : (pt.x < xIcpt);
+		return pt.y > getYWhenX(pt.x);
+	}
+	
+	bool xIsLessThan (vecF pt, float eps=floatEps) const
+	{
+		if (isHorizontal())
+			return pt1.x < pt2.x ? (pt.y > yIcpt) : (pt.y < yIcpt);
+		return pt.x > getXWhenY(pt.y);
+	}
+	
+	bool yIsGreaterThan (vecF pt, float eps=floatEps) const
+	{
+		return !yIsLessThan(pt, eps);	// Includes equality
+	}
+	
+	bool xIsGreaterThan (vecF pt, float eps=floatEps) const
+	{
+		return !xIsLessThan(pt, eps); 	// Includes equality
+	}
+	
+	bool isVertical (float eps=rectlrEps) const
+	{
+//		return std::isinf(slope);
+		return epsEquals(invSlope, 0, eps);
+	}
+	
+	bool isHorizontal (float eps=rectlrEps) const
+	{
+		return epsEquals(slope, 0, eps);
+	}
+	
+	bool isRectilinear (float eps=rectlrEps) const
+	{
+		return isVertical(eps) || isHorizontal(eps);
+	}
+	
+	virtual bool containsPoint (vecF pt, float eps=floatEps) const
+	{
+		vecF myDif = pt2 - pt1;
+		vecF testDif = pt - pt1;
+		return epsEquals(crossProd(myDif, testDif), 0, eps);
+		
+#if 0
+		/* My version before learning about cross-product */
+		if (isVertical())
+			return epsEquals(pt.x, xIcpt, eps);
+		else if (isHorizontal())
+			return epsEquals(pt.y, yIcpt, eps);
+		else if (abs(slope) > 1)
+			return epsEquals(pt.x, getXWhenY(pt.y), eps);
+		return epsEquals(pt.y, getYWhenX(pt.x), eps);
+#endif
+	}
+	
+	bool isParallelWith (const Line& l, float eps=floatEps) const
+	{
 		if (isVertical())
 			return l.isVertical();
 		else if (isHorizontal())
 			return l.isHorizontal();
-		else return epsEquals(slope, l.slope, floatEps, true);
+		else if (abs(slope) > 1)
+			return epsEquals(invSlope, l.invSlope, eps, true);
+		else return epsEquals(slope, l.slope, eps, true);
 	}
 	
-	bool isPerpendicularTo (const Line& l) const
+	bool isPerpendicularTo (const Line& l, float eps=floatEps) const
 	{
 		if (isVertical())
 			return l.isHorizontal();
 		else if (isHorizontal())
 			return l.isVertical();
-		else return epsEquals(-invSlope, l.slope, floatEps, true);
+		else if (abs(slope) > 1)
+			return epsEquals(-invSlope, l.slope, floatEps, true);
+		else return epsEquals(slope, -l.invSlope, floatEps, true);
 	}
 	
-	vecF intersectionPointWith (const Line& l) const
+	/* Check parallel/collinear first (or read NAN/INFINITY) */
+	vecF intersectionPointWith (const Line& l, float parallelEps=floatEps) const
 	{
-		//RETURN WHAT FOR COLLINEARITY
+		vec3f lineXline {
+			crossTriplet.y * l.crossTriplet.z - crossTriplet.z * l.crossTriplet.y,
+			crossTriplet.z * l.crossTriplet.x - crossTriplet.x * l.crossTriplet.z,
+			crossTriplet.x * l.crossTriplet.y - crossTriplet.y * l.crossTriplet.x,
+		};
+		if (epsEquals(lineXline.z, 0)) {
+			if (containsPoint(l.pt1))
+				return {INFINITY, INFINITY};
+			return {NAN, NAN};
+		}
+		return vecF(lineXline.x / lineXline.z, lineXline.y / lineXline.z);
+		
+#if 0
+		/* My version before learning about cross-product */
 		if (isVertical()) {
 			if (l.isVertical()) {
 				if (epsEquals(xIcpt, l.xIcpt))
@@ -720,16 +771,23 @@ struct Line
 		else if (l.isVertical())
 			return getPtWhenX(l.xIcpt);
 		
-		float denom = slope - l.slope;
-		if (epsEquals(denom, 0)) {
-			/* Lines are parallel. */
-			if (epsEquals(xIcpt, l.xIcpt))
-				return vecF(INFINITY, INFINITY);
-			return vecF{NAN, NAN};   // throw error
+		if (abs(slope) > 1) {
+			//was going to use different
 		}
-		float x = (l.yIcpt - yIcpt) / denom;
-		float y = (slope * l.yIcpt - l.slope * yIcpt) / denom;
-		return vecF {x, y};
+		else
+		{
+			float denom = slope - l.slope;
+			if (epsEquals(denom, 0, parallelEps)) {
+				/* Lines are parallel. */
+				if (epsEquals(xIcpt, l.xIcpt))
+					return vecF(INFINITY, INFINITY);
+				return vecF{NAN, NAN};
+			}
+			isct.x = (l.yIcpt - yIcpt) / denom;
+			isct.y = (slope * l.yIcpt - l.slope * yIcpt) / denom;
+		}
+		return isct;
+#endif
 	}
 	
 	Line perpendicularLineThrough (const vecF& pt) const
@@ -737,24 +795,27 @@ struct Line
 		if (isVertical())
 			return Line(0.f, pt);
 		else if (isHorizontal())
-			return Line(INFINITY, pt);
-		else return Line(-invSlope, pt);
+			return Line(0.f, pt, true);
+		else if (abs(slope) > 1)
+			return Line(-invSlope, pt);
+		return Line(-slope, pt, true);
 	}
 	
 	Line parallelLineThrough (const vecF& pt) const
 	{
+		if (abs(slope) > 1)
+			return Line(invSlope, pt, true);
 		return Line(slope, pt);
 	}
 	
 	Line parallelLineOffsetBy (float offs) const
 	{
-		return Line(slope, pt1 + pVec(offs, normal));
+		return parallelLineThrough(pt1 + pVec(offs, normal));
 	}
 	
 	vecF pointPerpendicularTo (const vecF& pt) const
 	{
-		auto line_ { perpendicularLineThrough(pt) };
-		return intersectionPointWith(line_);
+		return intersectionPointWith(perpendicularLineThrough(pt));
 	}
 	
 	float perpDistanceTo (const vecF& pt) const
@@ -762,12 +823,13 @@ struct Line
 		return hyp(pt, pointPerpendicularTo(pt));
 	}
 	
-		/* confirm that self.containsPoint(pt) before using */
 	vecF pointPlusDistance (const vecF& pt, float dist) const
 	{
+		auto pvec = pVec(abs(dist), dist < 0 ? oppAngle : angle);
 		if (!containsPoint(pt))
-			return {NAN, NAN};
-		return pt + toRect(abs(dist), dist < 0 ? oppAngle : angle);
+			// Flag?
+			return pointPerpendicularTo(pt) + pvec;
+		return pt + pvec;
 	}
 	
 	LineSegment getSegmentFromXs (float minx, float maxx) const;
@@ -776,7 +838,7 @@ struct Line
 	
 
 private:
-	void setValuesFromTwoPoints (vecF p1, vecF p2)
+	void setValuesFromTwoPoints (vecF p1, vecF p2, float eps=floatEps)
 	{
 		float xDif = p2.x - p1.x;
 		float yDif = p2.y - p1.y;
@@ -784,14 +846,14 @@ private:
 		normal = czdg(angle + 90);
 		oppAngle = czdg(angle + 180);
 		oppNormal = czdg(angle + 270);
-		if (epsEquals(xDif, 0)) {
-			 slope = pt1.y < pt2.y ? INFINITY : -INFINITY;
-			invSlope = 0;
+		if (epsEquals(xDif, 0, eps)) {
+			slope = pt1.y < pt2.y ? INFINITY : -INFINITY;
+			invSlope = 0.f;
 			yIcpt = NAN;
 			xIcpt = p1.x;
 		}
-		else if (epsEquals(yDif, 0)) {
-			slope = 0;
+		else if (epsEquals(yDif, 0, eps)) {
+			slope = 0.f;
 			invSlope = pt1.x < pt2.x ? INFINITY : -INFINITY;
 			yIcpt = p1.y;
 			xIcpt = NAN;
@@ -799,15 +861,24 @@ private:
 		else {
 			slope = yDif / xDif;
 			invSlope = xDif / yDif;
-			yIcpt = p1.y - slope * p1.x;
-			xIcpt = p1.x - invSlope * p1.y;
+			if (slope < invSlope) {
+				yIcpt = p1.y - slope * p1.x;
+				xIcpt = p1.x - invSlope * yIcpt;
+			}
+			else {
+				xIcpt = p1.x - invSlope * p1.y;
+				yIcpt = p1.y - slope * xIcpt;
+			}
 		}
+		
+		crossTriplet = {p1.y - p2.y, p2.x - p1.x, p1.x * p2.y - p2.x * p1.y};
 	}
 
 public:
 	vecF 		pt1,
 				pt2
 	;
+	vec3f		crossTriplet;
 	float		slope,
 				invSlope,
 				yIcpt,
@@ -817,11 +888,7 @@ public:
 				, normal
 				, oppNormal
 	;
-	float 		errorMargin = floatEps;
 };
-
-
-
 
 
 
@@ -859,12 +926,22 @@ struct LineSegment : public Line
 	
 	bool containsPoint (vecF pt, float eps=floatEps) const override
 	{
+		vecF myDif = pt2 - pt1;
+		vecF testDif = pt - pt1;
+		auto dot = dotProd(myDif, testDif);
+		return epsEquals(crossProd(myDif, testDif), 0, eps)
+			&& epsGTE(dot, 0, eps)
+			&& epsLTE(dot, length * length, eps);
+		
+#if 0
+		/* My version before learning about cross-product */
 		if (!isOrBetween(pt.x, minx, maxx, eps)
 			|| !isOrBetween(pt.y, miny, maxy, eps))
 			return false;
 		if (isVertical(eps))
 			return epsEquals(pt.x, xIcpt, eps);
 		return epsEquals(pt.y, slope * pt.x + yIcpt, eps);
+#endif
 	}
 	
 	bool intersectsWith (const Line& other, vecF* isctPt = nullptr, float eps=floatEps) const
@@ -876,7 +953,7 @@ struct LineSegment : public Line
 			&& epsLTE(miny, pt.y, eps) && epsGTE(maxy, pt.y, eps);
 //		return containsPoint(pt);
 		// HAD TO DIAL FLOATEPS ALL THE WAY UP TO .006 IN ORDER FOR CONTAINSPOINT TO
-		// WORK
+		// WORK (OLD VERSION)
 	}
 	
 	bool intersectsWith (const LineSegment& other, vecF* isctPt = nullptr, float eps=floatEps) const
@@ -1040,6 +1117,7 @@ inline vector<vecF> LineSegment::intersectionPointsWith (const Arc& arc) const
 }
    
 
+/* Returns {center, radius} */
 inline pair<Vector2f, float> circleFrom3Pts (vecF pt1, vecF pt2, vecF pt3)
 {
 	LineSegment seg1 {pt1, pt2};

@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <variant>
 #include <optional>
+#include <cassert>
 
 #include <set>
 #include <unordered_set>
@@ -57,6 +58,13 @@ using std::enable_shared_from_this;
 using std::make_unique;
 using std::make_shared;
 using std::dynamic_pointer_cast;
+using std::optional;
+using std::nullopt;
+using std::make_optional;
+using std::variant;
+using std::get;
+using std::get_if;
+using std::holds_alternative;
 using std::chrono::duration_cast;
 using std::chrono::system_clock;
 using std::chrono::steady_clock;
@@ -815,12 +823,6 @@ bool isOfKind (Base* obj)
 
 template <class Subclass, class Base>
 bool isOfKind (shared_ptr<Base>& obj)
-{
-	return dynamic_pointer_cast<Subclass>(obj) != nullptr;
-}
-
-template <class Subclass, class Base>
-bool isOfKind (unique_ptr<Base>& obj)
 {
 	return dynamic_pointer_cast<Subclass>(obj) != nullptr;
 }

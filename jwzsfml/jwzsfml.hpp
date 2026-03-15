@@ -908,6 +908,13 @@ struct LineSegment : public Line
 		ctorBody(s, e);
 	}
 	
+	LineSegment (const vecF& pt)
+		: Line({0, 0}, pt)
+		, line({0, 0}, pt)
+	{
+		ctorBody({0, 0}, pt);
+	}
+	
 	LineSegment () : LineSegment({0,0}, {1,0}) { }
 	
 	void ctorBody (const vecF& s, const vecF& e)

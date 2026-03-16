@@ -169,16 +169,13 @@ struct SineEaseInOut: public EasingPattern
 	
 	float operator() (float prog)
 	{
-		if (prog > .99)
-			return 1;
 		auto elapsed = prog * duration;
 		float apparentXlat;
 		if (elapsed < sineZone)
-			apparentXlat = radius - (absCos(elapsed / radius) * radius);
+			apparentXlat = radius - (abs(cos(elapsed / radius)) * radius);
 		else if (elapsed < duration - sineZone)
 			apparentXlat = elapsed - sineZone + radius;
-		else
-			apparentXlat = radius + steadyLength + (absSin((elapsed - sineZone - steadyLength) / radius) * radius);
+		else apparentXlat = radius + steadyLength + (abs(sin((elapsed - sineZone - steadyLength) / radius)) * radius);
 		return apparentXlat / apparentLength;
 	}
 	
@@ -201,6 +198,9 @@ public:
 		elapsedWhileActive += delta;
 		if (elapsedWhileActive >= totalDuration) {
 			if (!looping) {
+				elapsedWhileActive = totalDuration;
+				setProgress();
+				applyProgress();
 				endAndReset();
 				return;
 			}
@@ -275,7 +275,9 @@ protected:
 	void setProgress ()
 	{
 		auto val = elapsedWhileActive / totalDuration;
-		if (easePattern)
+		if (epsEquals(val, 1, .005)) //MAYBE NOT NCSSY, update could handle
+			progress = 1;
+		else if (easePattern)
 			progress = (*(*easePattern))(val);
 		else progress = val;
 	}
@@ -457,6 +459,7 @@ public:
 	{
 		destPt = dest;
 		duration = t;
+		//totalDuration
 	}
 	
 };

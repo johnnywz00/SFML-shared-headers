@@ -157,24 +157,35 @@ struct EasingPattern
 
 struct SineEaseInOut: public EasingPattern
 {
-	SineEaseInOut (float steadyRatio=0)
+	//RECONFIG HOW easepattern gets assigned/constructed so duration doesn't have to be mentioned twice in an Animation declaration
+	SineEaseInOut (float dur, float steadyRatio=0)
 	{
+		duration = dur;
 		radius = duration / (pi + max(steadyRatio, 0.f));
 		steadyLength = steadyRatio * radius;
 		apparentLength = steadyLength + 2 * radius;
+		sineZone = radius * pi * .5;
 	}
 	
 	float operator() (float prog)
 	{
+		if (prog > .99)
+			return 1;
 		auto elapsed = prog * duration;
-		float sineZone = radius * pi * .5;
-		float apparentXlat = radius - (sin((elapsed - steadyLength)/ radius) * radius) + steadyLength;
+		float apparentXlat;
+		if (elapsed < sineZone)
+			apparentXlat = radius - (absCos(elapsed / radius) * radius);
+		else if (elapsed < duration - sineZone)
+			apparentXlat = elapsed - sineZone + radius;
+		else
+			apparentXlat = radius + steadyLength + (absSin((elapsed - sineZone - steadyLength) / radius) * radius);
 		return apparentXlat / apparentLength;
 	}
 	
 	float 		radius;
 	float		apparentLength;
 	float		steadyLength;
+	float		sineZone;
 };
 
 
@@ -195,10 +206,12 @@ public:
 			}
 			else {
 				elapsedWhileActive -= totalDuration;
+				// FOR VALUEANIMATIONS the startPt will need to be readjusted
 			}
 		}
 		lastActiveTime = t;
 		setProgress();
+		applyProgress();
 	}
 
 	virtual void play (const Time& t) // from start
@@ -253,7 +266,7 @@ public:
 	Time					elapsedWhileActive;
 	Time 					totalDuration;
 	float					progress;
-	optional<unique_ptr<EasingPattern>>
+	optional<shared_ptr<EasingPattern>>
 							easePattern;
 	bool					looping = false;
 	bool					isPlaying_ = false;
@@ -266,6 +279,8 @@ protected:
 			progress = (*(*easePattern))(val);
 		else progress = val;
 	}
+	
+	virtual void applyProgress () { }
 	
 };
 
@@ -300,7 +315,15 @@ public:
 // MAKE VALUEANIMATION START/DEST visible to these somehow, rather than store copies?
 struct PathFunc
 {
+	virtual ~PathFunc () = default;
+	
 	virtual vecF operator() (float prog) = 0;
+	
+	virtual void reset (const vecF& st, const vecF& dest)
+	{
+		startPt = st;
+		destPt = dest;
+	}
 	
 	vecF		startPt;
 	vecF		destPt;
@@ -313,12 +336,17 @@ struct StraightPath: public PathFunc
 {
 	StraightPath ()
 	{
-		difVec = destPt - startPt;
 	}
 	
 	vecF operator() (float prog) override
 	{
 		return startPt + prog * difVec;
+	}
+	
+	void reset (const vecF& st, const vecF& dest) override
+	{
+		PathFunc::reset(st, dest);
+		difVec = destPt - startPt;
 	}
 	
 	vecF		difVec;
@@ -397,8 +425,13 @@ public:
 	void play (const Time& t) override
 	{
 		Animation::play(t);
-		pathFunc->startPt = startPt;
-		pathFunc->destPt = destPt.value_or(vecF{NAN, NAN});
+		pathFunc->reset(startPt, destPt.value_or(vecF{NAN, NAN}));
+	}
+	
+	void endAndReset () override
+	{
+		Animation::endAndReset();
+		myObj->setPosition(*destPt); ///shouldn't be necessary, but easingfunc not completing path
 	}
 	
 	optional<vecF>					destPt;
@@ -406,7 +439,13 @@ public:
 	optional<float>					speed;
 	
 	vecF							startPt;
-	unique_ptr<PathFunc>			pathFunc {make_unique<StraightPath>()};
+	shared_ptr<PathFunc>			pathFunc {make_shared<StraightPath>()};
+	
+protected:
+	void applyProgress () override
+	{
+		myObj->setPosition((*pathFunc)(progress));
+	}
 };
 
 
@@ -589,14 +628,14 @@ public:
 	{
 		elapsed = t;
 		for (auto& anim : animations) {
-			if (anim.isPlaying())
-				anim.update(t);
+			if (anim->isPlaying())
+				anim->update(t);
 		}
 	}
 	//respond to requests to pause/kill anim by tag
 	
 	//map w/ keys instead?
-	vector<Animation>	animations;
-	Time				elapsed;
+	vector<shared_ptr<Animation>>	animations;
+	Time							elapsed;
 };
 

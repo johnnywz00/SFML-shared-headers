@@ -634,6 +634,10 @@ inline float mean (float a, float b) { return min(a, b) + abs(b - a) / 2; }
 
 inline float absDif (float a, float b) { return abs(b - a); }
 
+inline float absCos (float deg) { return abs(cosd(deg)); }
+
+inline float absSin (float deg) { return abs(sind(deg)); }
+
 /* Epsilon comparisons for floats */
 inline bool epsEquals (float a, float b, float eps = floatEps, bool disregardInfSign = false)
 {

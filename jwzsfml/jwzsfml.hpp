@@ -175,11 +175,12 @@ inline void centerOrigin (Text& obj) {
     				obj.getLocalBounds().height / 2 );
 }
 
-//inline void centerOn (& obj, & target)    //TEMPLATE FUNCTION
+//template<typename T> /* Transformable expected */
+//void centerOn (T& obj, const vecF& targetPos)
 //{
 //	auto saveOgn = obj.getOrigin();
 //	centerOrigin(obj);
-//	//
+//	obj.setPosition(targetPos);
 //	obj.setOrigin(saveOgn);
 //}
 
@@ -435,6 +436,7 @@ class Textbox : public Drawable
 {
 public:
 	Textbox () { }
+	
 	Textbox (Font& font, vecF pos = {0, 0}, uint charSize = 12)
 	{
 		// NEEDS SIZE adjustments if a larger charSize is passed:
@@ -476,6 +478,8 @@ public:
 		boxTxt.setString(text);
 		moveCursorToTxtEnd();
 	}
+	
+	string getText () { return boxTxt.getString(); }
 	
 	void appendText (String text)  //sf::String to receive event unicode
 	{

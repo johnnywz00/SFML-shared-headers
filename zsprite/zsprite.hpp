@@ -421,6 +421,14 @@ inline void centerOrigin (ZSprite& obj)
 	obj.centerOrigin();
 }
 
+inline void initSprite (ZSprite& spr, const Texture& tx, const vecF& pos, bool centerOgn=false)
+{
+	spr.setTexture(tx);
+	if (centerOgn)
+		centerOrigin(spr);
+	spr.setPosition(pos);
+}
+
 inline bool hitL (ZSprite& z, FloatRect& isct)
 {
 	return isOrBetween(z.left(), isct.left, isct.left + isct.width - 1);

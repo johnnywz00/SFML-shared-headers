@@ -70,7 +70,8 @@ using std::chrono::system_clock;
 using std::chrono::steady_clock;
 using std::filesystem::path;
 using std::filesystem::current_path;
-
+using std::runtime_error;
+using std::exception;
 
 using std::cos;
 using std::sin;
@@ -336,9 +337,14 @@ inline string floatStr (float f, int decPlaces = 1) {
 	else if (isinf(f))
 		return "INFINITY";
     string s = toString(f);
-    return s.erase(!decPlaces || (decPlaces == 1 && s[s.size() - 1] == '0') ?
-                   s.size() - (8 - decPlaces) :
-                   s.size() - (6 - decPlaces));
+	size_t sublen = s.length();
+	size_t lastdot = s.find_last_of(".");
+	if (lastdot != s.npos) {
+		if (decPlaces == 0)
+			sublen = lastdot;
+		else sublen = lastdot + 1 + decPlaces;
+	}
+	return s.substr(0, sublen);
 }
 
 inline string ptrStr (void* ptr)
@@ -365,15 +371,17 @@ inline string strip (string& str)
 	return str.substr(idx1, idx2 - idx1 + 1);
 }
 
-inline string toUpper (string& str)
+inline string toUpper (const string& str_)
 {
+	string str {str_};
 	for (auto& ch : str)
 		ch = toupper(ch);
 	return str;
 }
 
-inline string toLower (string& str)
+inline string toLower (const string& str_)
 {
+	string str {str_};
 	for (auto& ch : str)
 		ch = tolower(ch);
 	return str;
@@ -889,16 +897,11 @@ vector<T> subset (const vector<T>& v, P p)
 	return sub;
 }
 
-template<class T, class P>
-vector<T> subsetRef (const vector<T>& v, P p)
-{
-	vector<T&> sub;
-	for (size_t i = 0; i < sub.size(); i++) {
-		if (p(v[i]))
-			sub.push_back(std::ref(v[i]));
-	}
-	return sub;
-}
+/*
+ * Cannot properly get a subset vector of references
+ * like a TADS3 list: have to subset through pointers
+ * or indices instead.
+ */
 
 template<class T>
 vector<T> vecMinusVec (const vector<T>& v, const vector<T>& v2)
@@ -950,15 +953,16 @@ void forEachAssoc(C& c, P p)
 template<class T>
 vector<T> getUnique(const vector<T>& c)
 {
+	unordered_set<T> uoset;
 	vector<T> culled;
 	culled.reserve(c.size());
-	for (auto& ele : c)
-		if (find(culled.begin(), culled.end(), ele) == culled.end())
+	for (auto& ele : c) {
+//		if (find(culled.begin(), culled.end(), ele) == culled.end())
+		if (uoset.insert(ele).second)
 			culled.push_back(ele);
+	}
 	return culled;
 }
-// NOTE: for large vectors, more efficient if implementation used an unordered set,
-// and checks to see if the new insertion was successful. Faster than std::find
 
 template<class T>
 int indexOfMax(const vector<T>& c)
@@ -1008,37 +1012,59 @@ int lastIndexOf(const vector<T>& v, T val)
 	return (ritr != v.rend() ? distance(ritr, v.rend()) - 1 : -1);
 }
 
-	/* Modifies original. Does nothing if no deleteCt */
-//template<class T> vector<T>&
-//splice(vector<T>& v, int startIdx, int deleteCt, const vector<T>& newElems) {
-//	//MORE ERROR HANDLING, NEGATIVE INDICES
-//	if (deleteCt && startIdx + deleteCt <= v.size()) {
-//		auto itr = v.erase(v.begin() + startIdx, v.begin() + startIdx + deleteCt);
-//		v.insert(itr, newElems.begin(), newElems.end());
-//	}
-//	return v;
-//}
+	/* Modifies original.
+	 * Last element of v can be referred to as index -1,
+	 * etc.
+	 */
+template<class T>
+vector<T>& splice(vector<T>& v, int startIdx, int deleteCt, const vector<T>& newElems)
+{
+	/* Allow negative indices to be counted from the end */
+	if (startIdx < 0) {
+		startIdx = int(v.size()) + startIdx;
+	}
+	if (startIdx < 0
+		|| startIdx > v.size()
+		|| (deleteCt && startIdx + deleteCt > v.size()))
+		return v;	// Abort if bad values passed
+	auto itr = v.begin() + startIdx;
+	if (deleteCt)
+		itr = v.erase(itr, v.begin() + startIdx + deleteCt);
+	v.insert(itr, newElems.begin(), newElems.end());
+	return v;
+}
 
-	/* Initializer list version */
-//template<class T> vector<T>&
-//splice(vector<T>& v, int startIdx, int deleteCt, std::initializer_list<T> newElems) {
-//	//MORE ERROR HANDLING, NEGATIVE INDICES
-//	if (deleteCt && startIdx + deleteCt <= v.size()) {
-//		auto itr = v.erase(v.begin() + startIdx, v.begin() + startIdx + deleteCt);
-//		v.insert(itr, newElems.begin(), newElems.end());
-//	}
-//	return v;
-//}
+/* Initializer list version */
+template<class T>
+vector<T>& splice(vector<T>& v, int startIdx, int deleteCt, const std::initializer_list<T>& newElems)
+{
+	/* Allow negative indices to be counted from the end */
+	if (startIdx < 0) {
+		startIdx = int(v.size()) + startIdx;
+	}
+	if (startIdx < 0
+		|| startIdx > v.size()
+		|| deleteCt && startIdx + deleteCt > v.size())
+		return v;	// Abort if bad values passed
+	auto itr = v.begin() + startIdx;
+	if (deleteCt)
+		itr = v.erase(itr, v.begin() + startIdx + deleteCt);
+	v.insert(itr, newElems.begin(), newElems.end());
+	return v;
+}
 
+/* If numToIncl isn't passed, it means take from startIdx to end of list */
 template<class T>
 vector<T> sublist(const vector<T>& v, int startIdx, int numToIncl = 0)
 {
-	//HANDLE BAD INDICES; CLAMP
+	if (startIdx < 0) {
+		startIdx = int(v.size()) + startIdx;
+	}
+	if (startIdx < 0 || startIdx >= v.size())
+		return v;	// Abort if bad values passed
 	vector<T> sub;
 	if (v.empty())
 		return sub;
-	if (startIdx < 0)
-		startIdx = v.size() + startIdx;
 	auto endItr = v.end();  // if numToIncl==0
 	if (numToIncl > 0)
 		endItr = v.begin() + startIdx + numToIncl;
@@ -1049,89 +1075,133 @@ vector<T> sublist(const vector<T>& v, int startIdx, int numToIncl = 0)
 	return sub;
 }
 
-//string& toLower(string& str) {
-//	transform(str.begin(), str.end(), str.begin(),
-//			  [&](char c){ return tolower(c); });
-//	return str;
-//}
 
-//CREATE zstring CLASS TO INCLUDE ALL TADSLIKE METHODS?
-//bool endsWith(string& str, string endStr, bool ignoreCase = false) {
-//	if (ignoreCase) {
-//		toLower(str);
-//		toLower(endStr);
-//	}
-//	return endStr == str.substr(str.size() - endStr.size());
-//}
-//
-//bool startsWith(string& str, string startStr, bool ignoreCase = false) {
-//	if (ignoreCase) {
-//		toLower(str);
-//		toLower(startStr);
-//	}
-//	return startStr == str.substr(0, startStr.size());
-//}
+inline bool endsWith(const string& str, string endStr, bool ignoreCase = false)
+{
+	string str_ = str;
+	if (ignoreCase) {
+		str_ = toLower(str);
+		endStr = toLower(endStr);
+	}
+	return endStr == str_.substr(str.size() - endStr.size());
+}
 
-//vector<string> split(string& str, string delim) {
-//	vector<string> ret;
-//	int i = 0;
-//	while (i < str.size()) {
-//		int idx = (int)str.find(delim);
-//		if (idx == str.npos) {
-//			ret.push_back(str.substr(i));
-//			break;
-//		}
-//		ret.push_back(str.substr(i,idx - i));
-//		str.replace(idx, delim.size(), "");
-//		i = idx;
-//	}
-//	return ret;
-//}
-//
-//vector<string> split(string& str, char delim) {
-//	string delimStr(1, delim);
-//	return split(str, delimStr);
-//}
-//
-//vector<string> split(string& str, int chunkSize) {
-//	vector<string> ret;
-//	int i = 0;
-//	for ( ; i < str.size() - chunkSize; i += chunkSize) {
-//		ret.push_back(str.substr(i, chunkSize));
-//	}
-//		/* Could be shorter than chunkSize at end */
-//	if (i < str.size())
-//		ret.push_back(str.substr(i));
-//	return ret;
-//}
-// TADS implements a final optional arg for max # of substrings
+inline bool startsWith(const string& str, string startStr, bool ignoreCase = false)
+{
+	string str_ = str;
+	if (ignoreCase) {
+		str_ = toLower(str);
+		startStr = toLower(startStr);
+	}
+	return startStr == str_.substr(0, startStr.size());
+}
 
-//string& splice(string& str, int startIdx, int deleteCt, string insertStr) {
-//	//MORE ERROR HANDLING
-//	if (startIdx < 0)
-//		startIdx = max(0, (int)str.length() + startIdx);
-//	if (deleteCt && startIdx + deleteCt <= str.size()) {
-//		auto itr = str.erase(str.begin() + startIdx, str.begin() + startIdx + deleteCt);
-//		str.insert(itr, insertStr.begin(), insertStr.end());
-//	}
-//	return str;
-//}
-//
-//bool match(string& str, string strToFind, int startIdx) {
-//	if (startIdx < 0)
-//		startIdx = max(0, (int)str.length() + startIdx);
-//	return strToFind == str.substr(startIdx, strToFind.length());
-//}
-//
-//string& findReplaceAll(string& str, string oldStr, string newStr, int startIdx = 0) {
-//	if (startIdx < 0)
-//		startIdx = max(0, (int)str.length() + startIdx);
-//	while ((startIdx = (int)str.find(oldStr, startIdx)) != string::npos) {
-//		str.replace(startIdx, oldStr.size(), newStr);
-//		startIdx += newStr.size();
-//	}
-//	return str;
-//}
+inline vector<string> split(const string& str, string delim="")
+{
+	vector<string> ret;
+	if (delim.empty()) {
+		/* Split into one-char strings */
+		forNum(str.length())
+			ret.push_back(str.substr(i, 1));
+	}
+	else {
+		string str_ {str};
+		size_t i = 0;
+		while (i < str_.size()) {
+			size_t idx = str_.find(delim);
+			if (idx == str_.npos) {
+				ret.push_back(str_.substr(i));
+				break;
+			}
+			ret.push_back(str_.substr(i, idx - i));
+			str_.replace(idx, delim.size(), "");
+			i = idx;
+		}
+	}
+	return ret;
+}
+
+inline vector<string> split(const string& str, char delim)
+{
+	string delimStr(1, delim);
+	return split(str, delimStr);
+}
+
+/* Chunk size is clamped to (1, str.size) */
+inline vector<string> split(const string& str, int chunkSize)
+{
+	vector<string> ret;
+	chunkSize = clamp(chunkSize, 1, (int)str.length());
+	int i = 0;
+	for ( ; i < str.size() - chunkSize; i += chunkSize) {
+		ret.push_back(str.substr(i, chunkSize));
+	}
+		/* Could be shorter than chunkSize at end */
+	if (i < str.size())
+		ret.push_back(str.substr(i));
+	return ret;
+}
+// TADS3 implements a final optional arg for max # of substrings
+
+inline string& splice(string& str, int startIdx, int deleteCt, const string& insertStr)
+{
+	/* Allow negative indices to be counted from the end */
+	if (startIdx < 0) {
+		startIdx = int(str.length()) + startIdx;
+	}
+	if (startIdx < 0
+		|| startIdx > str.length()
+		|| deleteCt && startIdx + deleteCt > str.length())
+		return str;	// Abort if bad values passed
+	auto itr = str.begin() + startIdx;
+	if (deleteCt)
+		itr = str.erase(itr, str.begin() + startIdx + deleteCt);
+	str.insert(itr, insertStr.begin(), insertStr.end());
+	return str;
+}
+
+inline bool match(const string& str, const string& strToFind, int startIdx=0)
+{
+	/* Allow negative indices to be counted from the end */
+	if (startIdx < 0) {
+		startIdx = int(str.length()) + startIdx;
+	}
+	if (startIdx < 0
+		|| startIdx > str.length())
+		return false;	// Abort if bad values passed
+	return strToFind == str.substr(startIdx, strToFind.length());
+}
+
+inline string& findReplaceAll(string& str, const string& oldStr, const string& newStr, int startIdx = 0)
+{
+	/* Allow negative indices to be counted from the end */
+	if (startIdx < 0) {
+		startIdx = int(str.length()) + startIdx;
+	}
+	if (startIdx < 0
+		|| startIdx > str.length())
+		return str;	// Abort if bad values passed
+	while ((startIdx = (int)str.find(oldStr, startIdx)) != string::npos) {
+		str.replace(startIdx, oldStr.size(), newStr);
+		startIdx += newStr.size();
+	}
+	return str;
+}
+
+inline string& findReplaceOnce(string& str, const string& oldStr, const string& newStr, int startIdx = 0)
+{
+	/* Allow negative indices to be counted from the end */
+	if (startIdx < 0) {
+		startIdx = int(str.length()) + startIdx;
+	}
+	if (startIdx < 0
+		|| startIdx > str.length())
+		return str;	// Abort if bad values passed
+	if ((startIdx = (int)str.find(oldStr, startIdx)) != string::npos) {
+		str.replace(startIdx, oldStr.size(), newStr);
+	}
+	return str;
+}
 
 template<class M>
 vector<typename M::key_type> keysToVec(M& m)

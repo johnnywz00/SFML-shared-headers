@@ -175,14 +175,16 @@ inline void centerOrigin (Text& obj) {
     				obj.getLocalBounds().height / 2 );
 }
 
-//template<typename T> /* Transformable expected */
-//void centerOn (T& obj, const vecF& targetPos)
-//{
-//	auto saveOgn = obj.getOrigin();
-//	centerOrigin(obj);
-//	obj.setPosition(targetPos);
-//	obj.setOrigin(saveOgn);
-//}
+template<typename T> /* Transformable expected */
+void centerOn (T& obj, const vecF& targetPos)
+{
+	auto glb = obj.getLocalBounds();
+	vecF lbCtr = {float(glb.width) / 2, float(glb.height) / 2};
+	vecF dif = obj.getOrigin() - lbCtr;
+	dif.x *= obj.getScale().x;
+	dif.y *= obj.getScale().y;
+	obj.setPosition(targetPos + dif);
+}
 
 inline bool ptHasValidNumbers(const vecF& pt)
 {
@@ -372,6 +374,12 @@ inline float angleBetween (vec3f v1, vec3f v2)
 	return toDeg(acos(dotProd(v1, v2) / (hyp(v1) * hyp(v2)) ));
 }
 
+inline float triangleArea (const vecF& p1, const vecF& p2, const vecF& p3)
+{
+	float base = hyp(p1, p2);
+	float ht = sind(angleBetween(toPolar(p2 - p1).y, toPolar(p3 - p1).y)) * hyp(p1, p3);
+	return (base * ht) / 2;
+}
 
 
 
@@ -380,15 +388,49 @@ inline void setVPos (Vertex& v, vecF pos)
     v.position = pos;
 }
 
-inline void simpleOutline (Shape& s, Color c=Color::Black)
+inline void initRect (RectangleShape& r, const vecF& size, const vecF& pos, const Color& c, bool centerOgn=false)
 {
-	s.setOutlineThickness(1);
+	r.setSize(size);
+	if (centerOgn)
+		centerOrigin(r);
+	r.setPosition(pos);
+	r.setFillColor(c);
+}
+
+inline void initCircle (CircleShape& circ, float rad, const vecF& pos, const Color& c, bool centerOgn=false)
+{
+	circ.setRadius(rad);
+	if (centerOgn)
+		centerOrigin(circ);
+	circ.setPosition(pos);
+	circ.setFillColor(c);
+}
+
+inline void initText (Text& txt, const vecF& pos, const Color& c, bool centerOgn=false)
+{
+	if (centerOgn)
+		centerOrigin(txt);
+	txt.setPosition(pos);
+	txt.setFillColor(c);
+}
+
+inline void initSprite (Sprite& spr, const Texture& tx, const vecF& pos, bool centerOgn=false)
+{
+	spr.setTexture(tx);
+	if (centerOgn)
+		centerOrigin(spr);
+	spr.setPosition(pos);
+}
+
+inline void setOutline (Shape& s, Color c=Color::Black, float thk=1)
+{
+	s.setOutlineThickness(thk);
 	s.setOutlineColor(c);
 }
 
-inline void simpleOutline (Text& t, Color c=Color::Black)
+inline void setOutline (Text& t, Color c=Color::Black, float thk=1)
 {
-	t.setOutlineThickness(1);
+	t.setOutlineThickness(thk);
 	t.setOutlineColor(c);
 }
 
@@ -407,25 +449,22 @@ inline FloatRect rectWithAddedMarginOf (const FloatRect& rect, float margin)
 	return FloatRect(rect.left - margin, rect.top - margin, rect.width + margin * 2, rect.height + margin * 2);
 }
 
-inline float triangleArea (const vecF& p1, const vecF& p2, const vecF& p3)
-{
-	float base = hyp(p1, p2);
-	float ht = sind(angleBetween(toPolar(p2 - p1).y, toPolar(p3 - p1).y)) * hyp(p1, p3);
-	return (base * ht) / 2;
-}
+
+
 
 /* To use vecF as key to a multimap */
-class VecfMM
+struct VecfMM
 {
-public:
 	VecfMM(vecF v) : vec(v) { }
-	vecF vec;
-	bool operator<(const VecfMM& other) const
+
+	bool operator< (const VecfMM& other) const
 	{
 		if (vec.x == other.vec.x)
 			return vec.y < other.vec.y;
 		return vec.x < other.vec.x;
 	}
+
+	vecF vec;
 };
 
 
@@ -454,6 +493,8 @@ public:
 		cursor.setFillColor(Color::Red);
 		setPosition(pos);
 	}
+	
+	~Textbox () = default;
 	
 	void draw (RenderTarget& w, RenderStates st) const override
 	{
@@ -512,6 +553,13 @@ public:
 		setPosition(tbox.getPosition());
 	}
 	
+	virtual void processReturn ()
+	{
+		if (returnKeyDeactivates)
+			isActive = false;
+		else moveCursorToTxtEnd();
+	}
+	
 	RectangleShape		tbox;
 	RectangleShape		cursor;
 	RectangleShape		highlight;
@@ -519,18 +567,19 @@ public:
 	vecF				borderOffset {2, 2};
 	bool				isActive = false;
 	bool				onlyShowText = false;
+	bool				returnKeyDeactivates = true;
 	string				name;
 	
 private:
 	void moveCursorToTxtEnd()
 	{
+		// INCOMPLETE SINCE TEXTBOX ALLOWED MULTI LINES
 		cursor.setPosition(boxTxt.getPosition().x + boxTxt.getLocalBounds().width + 2, tbox.getPosition().y + borderOffset.y);
 	}
 };
 
 /*
  -keep textboxes in map or vector, set name to map key
- 
  -if single textbox is member of the State, assign to it w args in onCreate
  
 	// EVENT HANDLING  (in pollEvent)
@@ -573,16 +622,6 @@ draw()
 
 
 
-
-class IDraggable
-{
-public:
-	virtual bool respondsToClick(int x, int y) { return false; }
-	virtual void startDrag() { } //(e.g. textBox setActive)
-	// set ≈State.curDragged
-	virtual void dragTo(int x, int y) { } //(move logic in update or mouseMoved)
-	virtual void endDrag(int x, int y) { } //onMouseUp
-};
 
 
 /* Tolerance for considering a Line vertical or horizontal.

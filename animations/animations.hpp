@@ -7,7 +7,6 @@
 //
 
 #include "jwzsfml.hpp"
-
 #include "zsprite.hpp"
 
 /* Make with smart pointers because a vector juggling e.g. enemy

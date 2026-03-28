@@ -28,11 +28,28 @@
 #include <unordered_set>
 #include <queue>
 #include <stack>
-//#include <regex>
-//#include <list>
-//#include <array>
-//#include <deque>
+#include <array>
+#include <regex>
+#include <list>
+#include <deque>
 
+#if __has_include(<version>)
+#include <version>
+#endif
+
+#ifdef __cpp_lib_format
+#include <format>
+using std::format;
+#endif
+
+#ifdef __cpp_lib_print
+#include <print>
+using std::print;
+#endif
+
+#ifdef __cpp_lib_erase_if
+using std::erase_if;
+#endif
 
 using std::string;
 using std::vector;
@@ -126,7 +143,6 @@ using strPair = pair<string, string>;
 using HRClock = std::chrono::high_resolution_clock;
 
 
-#define self (*this)
 #define uint unsigned int
 #define lutab unordered_map
 #define tS std::to_string
@@ -1288,5 +1304,94 @@ typename Cont::value_type* findFirstWhich (Cont& c, Cont& d, Pred p)
 {
     return &(*(find_first_of(c.begin(), c.end(), d.begin(), d.end(), p)));
 }
+
+namespace jwz
+{
+
+template<typename T>
+class Pointer
+{
+public:
+//	template<class... Args>
+//	Pointer (Args&&... args)
+//		: ptr_(make_unique<PointerUnq>(std::forward<Args>(args)...))
+//	{ }
+	Pointer (unique_ptr<T>&& unq) : ptr_(make_unique<PointerUnq>(std::move(unq))) { }
+	Pointer (const shared_ptr<T>& shd) : ptr_(make_unique<PointerShd>(shd)) { }
+	Pointer (shared_ptr<T>&& shd) noexcept : ptr_(make_unique<PointerShd>(std::move(shd))) { }
+	Pointer (const weak_ptr<T>& wk) : ptr_(make_unique<PointerWk>(wk)) { }
+	Pointer (T* tptr) : ptr_(make_unique<PointerRaw>(tptr)) { }
+	Pointer& operator= (Pointer&& p) noexcept
+	{
+		ptr_ = std::move(p.ptr_);
+		return *this;
+	}
+	Pointer (Pointer&& p) noexcept : ptr_(std::move(p.ptr_)) { }
+	Pointer (const Pointer& p) = delete;
+	Pointer& operator= (const Pointer& p) = delete;
+	
+	explicit operator bool () const { return get() != nullptr; }
+	
+	T* get () const { return ptr_ ? ptr_.get()->get() : nullptr; }
+	
+	T* operator-> () const { return get(); };
+	
+	T& operator* () const { return *get(); };
+	
+private:
+	struct _Pointer
+	{
+		virtual ~_Pointer () = default;
+		virtual T* get () = 0;
+	};
+	
+	struct PointerUnq: public _Pointer
+	{
+//		template<class... Args>
+//		PointerUnq (Args&&... args)
+//			: ptr(make_unique<T>(std::forward<Args>(args)...))
+//		{ }
+		PointerUnq (unique_ptr<T>&& unq) : ptr(std::move(unq)) { }
+
+		
+		T* get () override { return ptr.get(); }
+		
+		unique_ptr<T>		ptr;
+	};
+	
+	struct PointerShd: public _Pointer
+	{
+		PointerShd (const shared_ptr<T>& shd) : ptr(shd) { }
+		PointerShd (shared_ptr<T>&& shd) noexcept : ptr(std::move(shd)) { }
+		
+		T* get () override { return ptr.get(); }
+		
+		shared_ptr<T>		ptr;
+	};
+	
+	struct PointerWk: public _Pointer
+	{
+		PointerWk (const weak_ptr<T>& wk) : ptr(wk) { }
+		
+		T* get () override { return ptr.lock().get(); }
+		
+		weak_ptr<T>		ptr;
+	};
+	
+	struct PointerRaw: public _Pointer
+	{
+		PointerRaw (T* ptr_) : ptr(ptr_) { }
+		PointerRaw (const T& tref) : ptr(&tref) { }
+		
+		T* get () override { return ptr; }
+		
+		T*		ptr;
+	};
+	
+	unique_ptr<_Pointer>	ptr_;
+};
+
+
+} // end namespace jwz
 
 #endif  /* jwz_hpp */

@@ -50,7 +50,7 @@ public:
 	
 	static Font& getFont (string key) { return fontMap[key]; }
 	
-	static Sound& getSound (string key) { return soundMap[key]; }
+	static Sound& getSound (string key) { return soundMap.at(key); }
 	
 	static bool texExists (string key)
 	{
@@ -80,9 +80,23 @@ public:
 		if ((dfont = fontMap.begin()) != fontMap.end())
 			return (*dfont).second;
 		else {
-			static Font f;	// Should never be used
+			static Font f;
+#ifdef SFML_3
+			if (!f.openFromFile("/System/Library/Fonts/Geneva.ttf"))
+				cerr << "Couldn't load /System/Library/Fonts/Geneva.ttf" << endl;
+#else
+			f.loadFromFile("/System/Library/Fonts/Geneva.ttf");
+#endif
 			return f;
 		}
+	}
+	
+	static void cleanup ()
+	{
+		txMap.clear();
+		fontMap.clear();
+		soundMap.clear();
+		buffers.clear();
 	}
 	
 private:
@@ -123,6 +137,8 @@ private:
 		resetGetline(rscData);
 		
 		/* Main parsing to load resources */
+		string fileName;
+		string key;
 		while (getline(rscData, line)) {
 			if (line.empty() || line[0] == '#')
 				continue;
@@ -132,8 +148,6 @@ private:
 			}
 			
 			stringstream ss {line};
-			string fileName;
-			string key;
 			/* No error checking here; just allowing for fonts with
 			 * spaces in the names via quotes
 			 */
@@ -162,7 +176,11 @@ private:
 			
 			else if (section == "fonts") {
 				string filePath {(rscPath / "fonts" / fileName).string()};
+#ifdef SFML_3
+				if (!font.openFromFile(filePath))
+#else
 				if (!font.loadFromFile(filePath))
+#endif
 					cerr << "Couldn't load font " << fileName << endl;
 				else
 					fontMap.insert({key, font});
@@ -180,6 +198,7 @@ private:
 			}
 		} // end while getline
 	}
+
 	
 	static inline std::filesystem::path exeDir;
 	

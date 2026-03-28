@@ -15,28 +15,40 @@
 class Animatable
 {
 public:
-	const vecF& getOrigin () { return ent->getOrigin(); }
+#ifdef SFML_3
+	vecF getOrigin () { return ent->getOrigin(); }
 	
-	void setOrigin (const vecF& ogn) { ent->setOrigin(ogn); }
+	vecF getPosition () { return ent->getPosition(); }
+	
+	vecF getScale () { return ent->getScale(); }
+	
+	const float getRotation () { return ent->getRotation().asDegrees(); }
+	
+	void setRotation (float rot) { ent->setRotation(degrees(rot)); }
+	
+	void rotate (float rot) { ent->rotate(degrees(rot)); }
+#else
+	const vecF& getOrigin () { return ent->getOrigin(); }
 	
 	const vecF& getPosition () { return ent->getPosition(); }
 	
-	void setPosition (const vecF& pos) { ent->setPosition(pos); }
-	
-	void move (const vecF& dir) { ent->move(dir); }
-
 	const vecF& getScale () { return ent->getScale(); }
 	
-	void setScale (const vecF& sc) { ent->setScale(sc); }
-	
-	void scale (const vecF& sc) { ent->scale(sc); }
-
 	const float getRotation () { return ent->getRotation(); }
 	
 	void setRotation (float rot) { ent->setRotation(rot); }
 	
 	void rotate (float rot) { ent->rotate(rot); }
+#endif
+	void setOrigin (const vecF& ogn) { ent->setOrigin(ogn); }
 	
+	void setPosition (const vecF& pos) { ent->setPosition(pos); }
+	
+	void move (const vecF& dir) { ent->move(dir); }
+	
+	void setScale (const vecF& sc) { ent->setScale(sc); }
+	
+	void scale (const vecF& sc) { ent->scale(sc); }
 	
 	/* Sprite will call `setColor`, others will call `setFillColor` */
 	virtual void setColor (const Color& c) = 0;
@@ -82,7 +94,7 @@ public:
 		spr.setTextureRect(rect);
 	}
 	
-	ZSprite		spr;
+	ZSprite		spr {Texture()};
 };
 
 
@@ -116,6 +128,9 @@ class AnimatableText: public Animatable
 {
 public:
 	AnimatableText ()
+#ifdef SFML_3
+		: txt(Resources::getDefaultFont())
+#endif
 	{
 		ent = &(txt);
 	}

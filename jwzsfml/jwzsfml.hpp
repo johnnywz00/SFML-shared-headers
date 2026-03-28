@@ -4,6 +4,10 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#if SFML_VERSION_MAJOR >= 3
+#define SFML_3
+#endif
+
 #include "jwz.hpp"
 
 using namespace sf;
@@ -90,8 +94,13 @@ private:
 		if (fsmodes.size())
 			mode = fsmodes[0];
 		else mode = VideoMode::getDesktopMode();
+#ifdef SFML_3
+		width = mode.size.x;
+		height = mode.size.y;
+#else
 		width = mode.width;
 		height = mode.height;
+#endif
 		centerX = width / 2.f;
 		centerY = height / 2.f;
 		inited = true;
@@ -102,7 +111,7 @@ private:
 						, centerX
 						, centerY
 	;
-	inline static bool inited = false;
+	inline static bool 	inited = false;
 };	// end ScreenDimensions
 
 #define scrw ScreenDimensions::screenWidth()
@@ -113,11 +122,23 @@ private:
 
 
 
-inline bool isCmdPressed () { return iKP(LSystem) || iKP(RSystem); }
+inline bool isCmdPressed ()
+{
+	return Keyboard::isKeyPressed(Keyboard::Key::LSystem)
+			|| Keyboard::isKeyPressed(Keyboard::Key::RSystem);
+}
 
-inline bool isShiftPressed () { return iKP(LShift) || iKP(RShift); }
+inline bool isShiftPressed ()
+{
+	return Keyboard::isKeyPressed(Keyboard::Key::LShift)
+	|| Keyboard::isKeyPressed(Keyboard::Key::RShift);
+}
 
-inline bool isOptionPressed () { return iKP(LAlt) || iKP(RAlt); }
+inline bool isOptionPressed ()
+{
+	return Keyboard::isKeyPressed(Keyboard::Key::LAlt)
+	|| Keyboard::isKeyPressed(Keyboard::Key::RAlt);
+}
 
 inline string vecfStr (vecF v, string tag = "")
 {
@@ -128,16 +149,30 @@ inline string vecfStr (vecF v, string tag = "")
 inline string rectStr (const FloatRect& rect)
 {
 	stringstream ss;
-	ss << "{TL: " << rect.left << ", " << rect.top << "; " <<
-	rect.width << " x " << rect.height << '}';
+	ss << "{TL: " <<
+#ifdef SFML_3
+	rect.position.x << ", " << rect.position.y << "; " <<
+	rect.size.x << " x " << rect.size.x
+#else
+	rect.left << ", " << rect.top << "; " <<
+	rect.width << " x " << rect.height
+#endif
+	<< '}';
 	return ss.str();
 }
 
 inline string rectStr (const IntRect& rect)
 {
 	stringstream ss;
-	ss << "{TL: " << rect.left << ", " << rect.top << "; " <<
-	rect.width << " x " << rect.height << '}';
+	ss << "{TL: " <<
+#ifdef SFML_3
+	rect.position.x << ", " << rect.position.y << "; " <<
+	rect.size.x << " x " << rect.size.x
+#else
+	rect.left << ", " << rect.top << "; " <<
+	rect.width << " x " << rect.height
+#endif
+	<< '}';
 	return ss.str();
 }
 
@@ -156,23 +191,49 @@ inline Vector2f toVecF (const Vector2u& vec)
 	return Vector2f(vec.x, vec.y);
 }
 
-
+#ifdef SFML_3
 inline void centerOrigin (Shape& obj)
 {
-    obj.setOrigin( 	obj.getLocalBounds().width / 2,
-    				obj.getLocalBounds().height / 2 );
+    obj.setOrigin(obj.getLocalBounds().size / 2.f);
 }
 
 inline void centerOrigin (Sprite& obj)
 {
-    obj.setOrigin( 	obj.getLocalBounds().width / 2,
-    				obj.getLocalBounds().height / 2 );
+    obj.setOrigin(obj.getLocalBounds().size / 2.f);
 }
 
 inline void centerOrigin (Text& obj) {
 	
-    obj.setOrigin( 	obj.getLocalBounds().width / 2,
-    				obj.getLocalBounds().height / 2 );
+    obj.setOrigin(obj.getLocalBounds().size / 2.f);
+}
+
+template<typename T> /* Transformable expected */
+void centerOn (T& obj, const vecF& targetPos)
+{
+	auto glb = obj.getLocalBounds();
+	vecF lbCtr = {float(glb.size.x) / 2, float(glb.size.y) / 2};
+	vecF dif = obj.getOrigin() - lbCtr;
+	dif.x *= obj.getScale().x;
+	dif.y *= obj.getScale().y;
+	obj.setPosition(targetPos + dif);
+}
+#else
+inline void centerOrigin (Shape& obj)
+{
+	obj.setOrigin( 	obj.getLocalBounds().width / 2,
+				  obj.getLocalBounds().height / 2 );
+}
+
+inline void centerOrigin (Sprite& obj)
+{
+	obj.setOrigin( 	obj.getLocalBounds().width / 2,
+				  obj.getLocalBounds().height / 2 );
+}
+
+inline void centerOrigin (Text& obj) {
+	
+	obj.setOrigin( 	obj.getLocalBounds().width / 2,
+				  obj.getLocalBounds().height / 2 );
 }
 
 template<typename T> /* Transformable expected */
@@ -185,6 +246,7 @@ void centerOn (T& obj, const vecF& targetPos)
 	dif.y *= obj.getScale().y;
 	obj.setPosition(targetPos + dif);
 }
+#endif
 
 inline bool ptHasValidNumbers(const vecF& pt)
 {
@@ -388,6 +450,64 @@ inline void setVPos (Vertex& v, vecF pos)
     v.position = pos;
 }
 
+
+/* Copying the boilerplate per class so that we can use
+ * .position = {10, 10}  syntax without extra gymnastics
+ * to refer to the would-be inherited fields
+ */
+struct SpriteConfig
+{
+	Texture*					texture = nullptr;
+	optional<IntRect>			texRect;
+	vecF						origin {0.f, 0.f};
+	vecF						position {0.f, 0.f};
+	vecF						scale {1.f, 1.f};
+	float						rotation = 0;
+	Color						color = Color::White;
+	bool						centerOrigin = false;
+};
+
+struct TextConfig
+{
+	Font*						font = nullptr;
+	string						text;
+	unsigned int				charSize = 12;
+	float						outlineThickness = 0;
+	Color						outlineColor {Color::Black};
+	vecF						origin {0.f, 0.f};
+	vecF						position {0.f, 0.f};
+	vecF						scale {1.f, 1.f};
+	float						rotation = 0;
+	Color						color = Color::Black;
+	bool						centerOrigin = false;
+};
+
+struct RectConfig
+{
+	vecF						size {10.f, 10.f};
+	float						outlineThickness = 0;
+	Color						outlineColor {Color::Black};
+	vecF						origin {0.f, 0.f};
+	vecF						position {0.f, 0.f};
+	vecF						scale {1.f, 1.f};
+	float						rotation = 0;
+	Color						color = Color::White;
+	bool						centerOrigin = false;
+};
+
+struct CircleConfig
+{
+	float						radius = 10;
+	float						outlineThickness = 0;
+	Color						outlineColor {Color::Black};
+	vecF						origin {0.f, 0.f};
+	vecF						position {0.f, 0.f};
+	vecF						scale {1.f, 1.f};
+	float						rotation = 0;
+	Color						color = Color::White;
+	bool						centerOrigin = false;
+};
+
 inline void initRect (RectangleShape& r, const vecF& size, const vecF& pos, const Color& c, bool centerOgn=false)
 {
 	r.setSize(size);
@@ -395,6 +515,24 @@ inline void initRect (RectangleShape& r, const vecF& size, const vecF& pos, cons
 		centerOrigin(r);
 	r.setPosition(pos);
 	r.setFillColor(c);
+}
+
+inline void initRect (RectangleShape& rect, const RectConfig& rc)
+{
+	rect.setSize(rc.size);
+	rect.setScale(rc.scale);
+	if (rc.centerOrigin)
+		centerOrigin(rect);
+	else rect.setOrigin(rc.origin);
+	rect.setPosition(rc.position);
+#ifdef SFML_3
+	rect.setRotation(degrees(rc.rotation));
+#else
+	rect.setRotation(rc.rotation);
+#endif
+	rect.setFillColor(rc.color);
+	rect.setOutlineThickness(rc.outlineThickness);
+	rect.setOutlineColor(rc.outlineColor);
 }
 
 inline void initCircle (CircleShape& circ, float rad, const vecF& pos, const Color& c, bool centerOgn=false)
@@ -406,6 +544,24 @@ inline void initCircle (CircleShape& circ, float rad, const vecF& pos, const Col
 	circ.setFillColor(c);
 }
 
+inline void initCircle (CircleShape& circ, const CircleConfig& cc)
+{
+	circ.setRadius(cc.radius);
+	circ.setScale(cc.scale);
+	if (cc.centerOrigin)
+		centerOrigin(circ);
+	else circ.setOrigin(cc.origin);
+	circ.setPosition(cc.position);
+#ifdef SFML_3
+	circ.setRotation(degrees(cc.rotation));
+#else
+	circ.setRotation(cc.rotation);
+#endif
+	circ.setFillColor(cc.color);
+	circ.setOutlineThickness(cc.outlineThickness);
+	circ.setOutlineColor(cc.outlineColor);
+}
+
 inline void initText (Text& txt, const vecF& pos, const Color& c, bool centerOgn=false)
 {
 	if (centerOgn)
@@ -414,12 +570,52 @@ inline void initText (Text& txt, const vecF& pos, const Color& c, bool centerOgn
 	txt.setFillColor(c);
 }
 
+inline void initText (Text& txt, const TextConfig& tc)
+{
+	if (tc.font)
+		txt.setFont(*tc.font);
+	txt.setCharacterSize(tc.charSize);
+	txt.setString(tc.text);
+	txt.setScale(tc.scale);
+	txt.setOutlineThickness(tc.outlineThickness);
+	txt.setOutlineColor(tc.outlineColor);
+	if (tc.centerOrigin)
+		centerOrigin(txt);
+	else txt.setOrigin(tc.origin);
+	txt.setPosition(tc.position);
+#ifdef SFML_3
+	txt.setRotation(degrees(tc.rotation));
+#else
+	txt.setRotation(tc.rotation);
+#endif
+	txt.setFillColor(tc.color);
+}
+
 inline void initSprite (Sprite& spr, const Texture& tx, const vecF& pos, bool centerOgn=false)
 {
 	spr.setTexture(tx);
 	if (centerOgn)
 		centerOrigin(spr);
 	spr.setPosition(pos);
+}
+
+inline void initSprite (Sprite& spr, const SpriteConfig& sc)
+{
+	if (sc.texture)
+		spr.setTexture(*sc.texture);
+	if (sc.texRect)
+		spr.setTextureRect(*sc.texRect);
+	spr.setScale(sc.scale);
+	if (sc.centerOrigin)
+		centerOrigin(spr);
+	else spr.setOrigin(sc.origin);
+	spr.setPosition(sc.position);
+#ifdef SFML_3
+	spr.setRotation(degrees(sc.rotation));
+#else
+	spr.setRotation(sc.rotation);
+#endif
+	spr.setColor(sc.color);
 }
 
 inline void setOutline (Shape& s, Color c=Color::Black, float thk=1)
@@ -436,7 +632,12 @@ inline void setOutline (Text& t, Color c=Color::Black, float thk=1)
 
 inline vecF rectCenter (const FloatRect& rect)
 {
-	return vecF(rect.left + rect.width / 2, rect.top + rect.height / 2);
+#ifdef SFML_3
+	return vecF(rect.position.x + rect.size.x / 2.f,
+				rect.position.y + rect.size.y / 2.f);
+#else
+	return vecF(rect.left + rect.width / 2.f, rect.top + rect.height / 2.f);
+#endif
 }
 
 inline vecF rectCenter (const RectangleShape& rect)
@@ -446,7 +647,13 @@ inline vecF rectCenter (const RectangleShape& rect)
 
 inline FloatRect rectWithAddedMarginOf (const FloatRect& rect, float margin)
 {
-	return FloatRect(rect.left - margin, rect.top - margin, rect.width + margin * 2, rect.height + margin * 2);
+#ifdef SFML_3
+	return FloatRect({rect.position.x - margin, rect.position.y - margin},
+					 {rect.size.x + margin * 2, rect.position.y + margin * 2});
+#else
+	return FloatRect(rect.left - margin, rect.top - margin,
+					 rect.width + margin * 2, rect.height + margin * 2);
+#endif
 }
 
 
@@ -474,9 +681,14 @@ struct VecfMM
 class Textbox : public Drawable
 {
 public:
+#ifndef SFML_3
 	Textbox () { }
+#endif
 	
 	Textbox (Font& font, vecF pos = {0, 0}, uint charSize = 12)
+#ifdef SFML_3
+		: boxTxt(font)
+#endif
 	{
 		// NEEDS SIZE adjustments if a larger charSize is passed:
 		// outline, highlight, cursor, cursor pos...
@@ -574,7 +786,13 @@ private:
 	void moveCursorToTxtEnd()
 	{
 		// INCOMPLETE SINCE TEXTBOX ALLOWED MULTI LINES
-		cursor.setPosition(boxTxt.getPosition().x + boxTxt.getLocalBounds().width + 2, tbox.getPosition().y + borderOffset.y);
+#ifdef SFML_3
+		cursor.setPosition({boxTxt.getPosition().x + boxTxt.getLocalBounds().size.x + 2,
+						   tbox.getPosition().y + borderOffset.y});
+#else
+		cursor.setPosition(boxTxt.getPosition().x + boxTxt.getLocalBounds().width + 2,
+						   tbox.getPosition().y + borderOffset.y);
+#endif
 	}
 };
 
@@ -969,9 +1187,15 @@ struct LineSegment : public Line
 		maxx = max(s.x, e.x);
 		miny = min(s.y, e.y);
 		maxy = max(s.y, e.y);
+#ifdef SFML_3
+		bounds = FloatRect({minx, miny},
+						   {max(maxx - minx, 1.f),	// 1.f for vertical/horizontal segs
+						   max(maxy - miny, 1.f)});
+#else
 		bounds = FloatRect(minx, miny,
 						   max(maxx - minx, 1.f),	// 1.f for vertical/horizontal segs
 						   max(maxy - miny, 1.f));
+#endif
 	}
 	
 	bool containsPoint (vecF pt, float eps=floatEps) const override
@@ -1025,10 +1249,17 @@ struct LineSegment : public Line
 	bool intersectsWith (const FloatRect& rect) const
 	{
 		//add param for returning isctPts
+#ifdef SFML_3
+		vecF tl {rect.position.x, rect.position.y};
+		vecF tr {rect.position.x + rect.size.x - 1, rect.position.y};
+		vecF br {rect.position.x + rect.size.x - 1, rect.position.y + rect.size.y - 1};
+		vecF bl {rect.position.x, rect.position.y + rect.size.y - 1};
+#else
 		vecF tl {rect.left, rect.top};
 		vecF tr {rect.left + rect.width - 1, rect.top};
 		vecF br {rect.left + rect.width - 1, rect.top + rect.height - 1};
 		vecF bl {rect.left, rect.top + rect.height - 1};
+#endif
 		return intersectsWith(LineSegment(tl, tr))
 			|| intersectsWith(LineSegment(tr, br))
 			|| intersectsWith(LineSegment(br, bl))
@@ -1182,6 +1413,9 @@ inline pair<Vector2f, float> circleFrom3Pts (vecF pt1, vecF pt2, vecF pt3)
 
 inline bool rotatedContains (RectangleShape& r, float x, float y)
 {
+#ifdef SFML_3
+	return false; // /// NEW IMPLEMENTATION
+#else
    vecF pt {x, y};
    float oldRot = r.getRotation();
 	   /*
@@ -1252,6 +1486,7 @@ inline bool rotatedContains (RectangleShape& r, float x, float y)
 			   leftSide.xIsGreaterThan(pt)
 	   ;
    }
+#endif
 }
   
 
@@ -1298,8 +1533,8 @@ public:
 	
 	void move (float x, float y)
 	{
-		vx.move(x, y);
-		hl.move(x, y);
+		vx.move({x, y});
+		hl.move({x, y});
 	}
 
 	void move (vecF dif)
@@ -1310,8 +1545,8 @@ public:
 	
 	void setPosition (float x, float y)
 	{
-		vx.setPosition(x, y);
-		hl.setPosition(x, y);
+		vx.setPosition({x, y});
+		hl.setPosition({x, y});
 	}
 
 	void setPosition (vecF pos)
@@ -1359,8 +1594,14 @@ public:
 	void storeOrigin ()
 	{
 		FloatRect bounds = getBounds();
-		vecF center { bounds.left + bounds.width / 2,
+		vecF center {
+#ifdef SFML_3
+			bounds.position.x + bounds.size.x / 2,
+			bounds.position.y + bounds.size.y / 2};
+#else
+			bounds.left + bounds.width / 2,
 			bounds.top + bounds.height / 2};
+#endif
 		origin = center;
 	}
 
@@ -1371,7 +1612,7 @@ public:
 		scale_ = vecF(1, 1);
 		rotation_ = 0;
 		forNum (getVertexCount()) {
-			auto& vx = self[i];
+			auto& vx = (*this)[i];
 			originalDifs.insert({&vx, getPolarFromOrigin(vx)});
 		}
 	}
@@ -1416,6 +1657,9 @@ public:
 	
 	bool rotatedContains (float x, float y)
 	{
+#ifdef SFML_3
+		return false; // // NEW IMPLEMENTATION
+#else
 		vecF pt {x, y};
 		float oldRot = rotation_;
 			/*
@@ -1426,7 +1670,7 @@ public:
 				oldRot == 90 ||
 				oldRot == 270 ||
 				oldRot == 180)
-			return getBounds().contains(x, y);
+			return getBounds().contains({x, y});
 		
 			/*
 			 * Temporarily rectify the VA so we can figure out
@@ -1486,6 +1730,7 @@ public:
 					leftSide.xIsGreaterThan(pt)
 			;
 		}
+#endif
 	}
 
 	void executeTransform_ ()
@@ -1544,7 +1789,7 @@ public:
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
 				sh.sP(sh.gP().x + dif.x, sh.gP().y + dif.y);
-				self[i].position = sh.gP();
+				(*this)[i].position = sh.gP();
 			}
 		}
 	}
@@ -1552,7 +1797,7 @@ public:
 	void moveVx (int i, vecF dif)
 	{
 		dots[i].sP(dots[i].gP().x + dif.x, dots[i].gP().y + dif.y);
-		self[i].position = dots[i].gP();
+		(*this)[i].position = dots[i].gP();
 
 	}
 	
@@ -1561,7 +1806,7 @@ public:
 		forNum(getVertexCount()) {
 			if (&dots[i] == &sh) {
 				sh.sP(pos);
-				self[i].position = pos;
+				(*this)[i].position = pos;
 			}
 		}
 	}
@@ -1569,7 +1814,7 @@ public:
 	void setVxPos (int i, vecF pos)
 	{
 		dots[i].sP(pos);
-		self[i].position = pos;
+		(*this)[i].position = pos;
 	}
 
 	void deleteVx (VxShape& sh)
@@ -1867,6 +2112,14 @@ inline Color colorDevLockHue (Color& c, int dev);
 inline vector<int> rgbToHsb (const Color& c);
 inline Color decreaseSaturation (const Color& c, int);
 
+#ifdef SFML_3
+#define GET_PIXEL(X, Y) getPixel(vecU(X, Y))
+#define SET_PIXEL(X, Y, C) setPixel(vecU(X, Y), C)
+#else
+#define GET_PIXEL(X, Y) getPixel(X, Y)
+#define SET_PIXEL(X, Y, C) setPixel(X, Y, C)
+#endif
+
 class ZImage : public Image
 {
 public:
@@ -1875,17 +2128,21 @@ public:
 	
 	ZImage (const Image& img)
 	{
+#ifdef SFML_3
+		resize(img.getSize(), img.getPixelsPtr());
+#else
 		create(img.getSize().x, img.getSize().y, img.getPixelsPtr());
+#endif
 	}
 	
 	Color getPixel (vecU coords)
 	{
-		return Image::getPixel(coords.x, coords.y);
+		return Image::GET_PIXEL(coords.x, coords.y);
 	}
 	
 	Color getPixel (uint x, uint y)
 	{
-		return Image::getPixel(x, y);
+		return Image::GET_PIXEL(x, y);
 	}
 	
 	static bool isBlank(Color c) { return c.a == 0; }
@@ -1896,7 +2153,7 @@ public:
 		auto szy = getSize().y;
 		forNum(szy) {
 			forNumJ(szx) {
-				auto curPix = getPixel(j, i);
+				auto curPix = GET_PIXEL(j, i);
 				func(j, i, curPix);
 			}
 		}
@@ -1908,11 +2165,11 @@ public:
 		auto szy = getSize().y;
 		forNum(szy) {
 			forNumJ(szx) {
-				auto curPix = getPixel(j, i);
+				auto curPix = GET_PIXEL(j, i);
 				if (curPix.a == 0)
 					continue;
 				else curPix.a = max(0, curPix.a - val);
-				setPixel(j, i, curPix);
+				SET_PIXEL(j, i, curPix);
 			}
 		}
 	}
@@ -1923,12 +2180,17 @@ public:
 		auto szx = getSize().x;
 		auto szy = getSize().y;
 
+		RenderTexture rt;
+#ifdef SFML_3
+		Texture tx(*this);
+		if (!rt.resize({szx, szy}))
+			return;
+#else
 		Texture tx;
 		tx.loadFromImage(*this);
-		Sprite s(tx);
-		RenderTexture rt;
 		rt.create(szx, szy);
-		rt.draw(s);
+#endif
+		rt.draw(Sprite(tx));
 		RectangleShape r;
 		r.setSize({(float)szx, (float)szy});
 		r.setFillColor(Color(c.r, c.g, c.b, clamp(alphaVal, 0, 255)));
@@ -1938,7 +2200,7 @@ public:
 		forNum(szy) {
 			forNumJ(szx) {
 				if (!isBlank(getPixel(j, i)))
-					setPixel(j,  i, img.getPixel(j, i));
+					SET_PIXEL(j,  i, img.GET_PIXEL(j, i));
 			}
 		}
 	}
@@ -1948,8 +2210,8 @@ public:
 		if (!_isValidStartForFillIn(startPt))
 			return;
 		_fillInImpl(startPt,
-			[&](uint a, uint b) {
-			setPixel(a, b, colorDevLockHue(c, dev));
+			[&](unsigned int a, unsigned int b) {
+			SET_PIXEL(a, b, colorDevLockHue(c, dev));
 		});
 	}
 	
@@ -1958,14 +2220,18 @@ public:
 	{
 		if (!_isValidStartForFillIn(startPt))
 			return;
+#ifdef SFML_3
+		Image img {fname};
+#else
 		Image img;
 		img.loadFromFile(fname);
+#endif
 		auto szx = img.getSize().x;
 		auto szy = img.getSize().y;
 		
 		_fillInImpl(startPt,
 			[&](uint a, uint b) {
-				setPixel(a, b, img.getPixel(a % szx, b % szy));
+				SET_PIXEL(a, b, img.GET_PIXEL(a % szx, b % szy));
 		});
 	}
 
@@ -1995,7 +2261,8 @@ public:
 			for (auto [dx, dy] : dirs) {
 				int nx = cx + dx;
 				int ny = cy + dy;
-				if (nx >= 0 && nx < numCols && ny >= 0 && ny < numRows && getPixel(nx, ny) == colorToReplace) {
+				if (nx >= 0 && nx < numCols && ny >= 0
+					&& ny < numRows && GET_PIXEL(nx, ny) == colorToReplace) {
 					func(nx, ny);
 					unresolvedPts.push({nx, ny});
 				}
@@ -2024,13 +2291,13 @@ public:
 						 {0,  1},
 		};
 		
-		int wid = getSize().x;
-		int ht = getSize().y;
+		unsigned int wid = getSize().x;
+		unsigned int ht = getSize().y;
 		forNum(iterations) {
 			Image tempCopy {*this};
-			for (int i = 0; i < wid ; ++i) {
-				for (int j = 0; j < ht ; ++j) {
-					if (!blendToTransparent && isBlank(getPixel(i, j)))
+			for (unsigned int i = 0; i < wid ; ++i) {
+				for (unsigned int j = 0; j < ht ; ++j) {
+					if (!blendToTransparent && isBlank(GET_PIXEL(i, j)))
 						continue;
 					int num = 0;
 					int red = 0, green = 0, blue = 0, alpha = 0;
@@ -2039,7 +2306,7 @@ public:
 								&& i + coord.x < wid
 								&& j + coord.y >= 0
 								&& j + coord.y < ht) {
-							Color p = getPixel(i + coord.x, j + coord.y);
+							Color p = GET_PIXEL(i + coord.x, j + coord.y);
 							if (!blendToTransparent && isBlank(p))
 								continue;
 							++num;
@@ -2053,10 +2320,14 @@ public:
 									green / num,
 									blue / num,
 									alpha / num);
-					tempCopy.setPixel(i, j, c);
+					tempCopy.SET_PIXEL(i, j, c);
 				}
 			}
+#ifdef SFML_3
+			resize({wid, ht}, tempCopy.getPixelsPtr());
+#else
 			create(wid, ht, tempCopy.getPixelsPtr());
+#endif
 		}
 	}
 	
@@ -2066,11 +2337,11 @@ public:
 		int ht = getSize().y;
 		for (int i = 0; i <  wid ; ++i) {
 			for (int j = 0; j <  ht ; ++j) {
-				Color p = getPixel(i, j);
+				Color p = GET_PIXEL(i, j);
 				p.r -= (p.r - val >= 0 ? val : p.r);
 				p.g -= (p.g - val >= 0 ? val : p.g);
 				p.b -= (p.b - val >= 0 ? val : p.b);
-				setPixel(i, j, p);
+				SET_PIXEL(i, j, p);
 			}
 		}
 	}
@@ -2081,11 +2352,11 @@ public:
 		int ht = getSize().y;
 		for (int i = 0; i <  wid ; ++i) {
 			for (int j = 0; j <  ht ; ++j) {
-				Color p = getPixel(i, j);
+				Color p = GET_PIXEL(i, j);
 				p.r += (p.r + val <= 255 ? val : 255 - p.r);
 				p.g += (p.g + val <= 255 ? val : 255 - p.g);
 				p.b += (p.b + val <= 255 ? val : 255 - p.b);
-				setPixel(i, j, p);
+				SET_PIXEL(i, j, p);
 			}
 		}
 	}
@@ -2095,7 +2366,7 @@ public:
 		int ht = getSize().y;
 		for (int i = 0; i <  wid ; ++i) {
 			for (int j = 0; j <  ht ; ++j) {
-				Color p = getPixel(i, j);
+				Color p = GET_PIXEL(i, j);
 				if (p.r > p.g && p.r > p.b) {
 					float greenRatio = (float)p.g / (float)p.r;
 					float blueRatio = (float)p.b / (float)p.r;
@@ -2117,7 +2388,7 @@ public:
 					p.r = round((float)p.b * redRatio);
 					p.g = round((float)p.b * greenRatio);
 				}
-				setPixel(i, j, p);
+				SET_PIXEL(i, j, p);
 			}
 		}
 	}
@@ -2127,7 +2398,7 @@ public:
 		int ht = getSize().y;
 		for (int i = 0; i <  wid ; ++i) {
 			for (int j = 0; j <  ht ; ++j) {
-				Color p = getPixel(i, j);
+				Color p = GET_PIXEL(i, j);
 				if (p.r > p.g && p.r > p.b) {
 					float greenRatio = (float)p.g / (float)p.r;
 					float blueRatio = (float)p.b / (float)p.r;
@@ -2149,7 +2420,7 @@ public:
 					p.r = max(0u, (uint)round((float)p.b * redRatio));
 					p.g = max(0u, (uint)round((float)p.b * greenRatio));
 				}
-				setPixel(i, j, p);
+				SET_PIXEL(i, j, p);
 			}
 		}
 	}
@@ -2161,10 +2432,10 @@ public:
 		int ht = getSize().y;
 		for (int i = 0; i <  wid ; ++i) {
 			for (int j = 0; j <  ht ; ++j) {
-				Color p = getPixel(i, j);
+				Color p = GET_PIXEL(i, j);
 				if (!isBlank(p)) {
 					auto newPix = decreaseSaturation(p, val);
-					setPixel(i, j, newPix);
+					SET_PIXEL(i, j, newPix);
 				}
 			}
 		}
@@ -2178,7 +2449,7 @@ public:
 		int ht = getSize().y;
 		for (int i = 0; i <  wid ; ++i) {
 			for (int j = 0; j <  ht ; ++j) {
-				Color p = getPixel(i, j);
+				Color p = GET_PIXEL(i, j);
 				int stepVal = 51;
 				// could generate a map rather than iterate every time
 				for (int low = 0; low < 256; low += stepVal) {
@@ -2193,7 +2464,7 @@ public:
 						p.b = p.b - low < hi - p.b ? low : hi;
 					}
 				}
-				setPixel(i, j, p);
+				SET_PIXEL(i, j, p);
 			}
 		}
 	}
@@ -2205,6 +2476,11 @@ inline Color withAlpha (const Color& c, int a);
 /* Visualize location being used by code */
 class DbgPoint : public Drawable
 {
+#ifdef SFML_3
+#define DBG_POINT_LABEL (*label)
+#else
+#define DBG_POINT_LABEL (label)
+#endif
 public:
 	DbgPoint(const vecF& pt, string s = "", Font* font = nullptr, float txtDist=NAN)
 	{
@@ -2227,13 +2503,17 @@ public:
 		if (font) {
 			drawTxt = true;
 			labelStr = s;
+#ifdef SFML_3
+			label = Text(*font, labelStr, 13);
+#else
 			label = Text(labelStr, *font, 13);
-			label.setFillColor(Color::Black);
+#endif
+			DBG_POINT_LABEL.setFillColor(Color::Black);
 			if (isnan(txtDist))
-				label.setPosition(pt + pVec(20, 0));
+				DBG_POINT_LABEL.setPosition(pt + pVec(20, 0));
 			else {
 				auto txtPt = pt + pVec(txtDist, randRange(260, 280)); //randRange(359));
-				label.setPosition(txtPt);
+				DBG_POINT_LABEL.setPosition(txtPt);
 				va.append(Vertex(pt, withAlpha(Color::Black, 150)));
 				va.append(Vertex(txtPt, withAlpha(Color::Black, 150)));
 			}
@@ -2246,15 +2526,24 @@ public:
 		target.draw(c1, states);
 		target.draw(c2, states);
 		if (drawTxt)
-			target.draw(label, states);
+			target.draw(DBG_POINT_LABEL, states);
 	}
 	
-	VertexArray va {Lines};
-	CircleShape c1;
-	CircleShape c2;
-	Text 		label;
-	string		labelStr;
-	bool 		drawTxt = false;
+	VertexArray 	va {
+#ifdef SFML_3
+		PrimitiveType::Lines };
+#else
+		Lines };
+#endif
+	CircleShape 	c1;
+	CircleShape 	c2;
+#ifdef SFML_3
+	optional<Text> 	label;
+#else
+	Text 			label;
+#endif
+	string			labelStr;
+	bool 			drawTxt = false;
 };
 
 
@@ -2722,11 +3011,16 @@ inline Color withAlpha (const Color& c, int a)
 	 */
 inline void playSoundOnce (const string& file)
 {
-	SoundBuffer sb{};
+#ifdef SFML_3
+//	SoundBuffer sb {"resources/sounds/" + file};
+//	Sound snd {sb};
+#else
+	SoundBuffer sb;
 	sb.loadFromFile("resources/sounds/" + file);
-	Sound snd{};
+	Sound snd;
 	snd.setBuffer(sb);
-	snd.play();
+#endif
+//	snd.play();
 }
 
 inline void playSoundAtVolPct (Sound& snd, float pct)

@@ -7,17 +7,18 @@
 class ZSprite : public Drawable
 {
 public:
+#ifndef SFML_3
     ZSprite () { setup(); }
-	
+#endif
 	ZSprite (const Texture &texture)
+		: s(texture)
 	{
-		s.setTexture(texture);
 		setup();
 	}
 
 	ZSprite (const Texture &texture, const IntRect &rectangle)
+		: s(texture)
 	{
-		s.setTexture(texture);
 		s.setTextureRect(rectangle);
 		setup();
 	}
@@ -36,6 +37,19 @@ public:
 //============================================================================//
 
 		/* Get values from hitBox() */
+#ifdef SFML_3
+	float width () { return hitBox().size.x; }
+	
+	float height () { return hitBox().size.y; }
+	
+	float top () { return hitBox().position.y; }
+	
+	float bottom () { return hitBox().position.y + hitBox().size.y - 1; }
+	
+	float left () { return hitBox().position.x;}
+	
+	float right () { return hitBox().position.x + hitBox().size.x - 1; }
+#else
 	float width () { return hitBox().width; }
 	
 	float height () { return hitBox().height; }
@@ -47,7 +61,7 @@ public:
 	float left () { return hitBox().left;}
 	
 	float right () { return hitBox().left + hitBox().width - 1; }
-	
+#endif
 	vecF bottomLeft () { return {left(), bottom()}; }
    
 	vecF bottomRight() { return {right(), bottom()}; }
@@ -80,6 +94,19 @@ public:
  
 	
 		/* Get values from getGlobalBounds() */
+#ifdef SFML_3
+	float gWidth () { return gGB().size.x; }
+	
+	float gHeight () { return gGB().size.y; }
+	
+	float gTop () { return gGB().position.y; }
+	
+	float gBottom () { return gGB().position.y + gGB().size.y - 1; }
+	
+	float gLeft () { return gGB().position.x; }
+	
+	float gRight () { return gGB().position.x + gGB().size.x - 1; }
+#else
 	float gWidth () { return gGB().width; }
 
 	float gHeight () { return gGB().height; }
@@ -91,7 +118,7 @@ public:
 	float gLeft () { return gGB().left; }
 
 	float gRight () { return gGB().left + gGB().width - 1; }
-
+#endif
 		/* Set sprite position with reference to an edge of getGlobalBounds() */
 	void setgTop (float y)
 	{
@@ -127,14 +154,16 @@ public:
 
 	virtual void centerOrigin () { ::centerOrigin(s); }
 
+
+#ifdef SFML_3
+	float getRadRotation() const { return getRotation().asRadians(); }
+	
+	virtual void setRadRotation (float rot) { s.setRotation(radians(rot)); }
+#else
 	float getRadRotation() const { return toRad(getRotation()); }
 	
-	float gRotR () { return toRad(getRotation()); }
-	
 	virtual void setRadRotation (float rot) { s.setRotation(toDeg(rot)); }
-	
-	virtual void setRotR (float rot) { s.setRotation(toDeg(rot)); }
-
+#endif
 	virtual FloatRect clickBox () { return gGB(); }
 
 		/* hitBox() offset, for use when we want the
@@ -146,14 +175,23 @@ public:
 	virtual FloatRect hitBox ()
 	{
 		FloatRect gb = gGB();
+#ifdef SFML_3
+		return FloatRect({gb.position.x + hbofs(), gb.position.y + hbofs()},
+						 {gb.size.x - 2 * hbofs(), gb.size.y - 2 * hbofs()});
+#else
     	return FloatRect(gb.left + hbofs(), gb.top + hbofs(),
 						 gb.width - 2 * hbofs(), gb.height - 2 * hbofs());
+#endif
 	}
 	
 	FloatRect baseline ()
 	{
 		FloatRect hb = hitBox();
+#ifdef SFML_3
+		return FloatRect({hb.position.x, hb.position.y + hb.size.y - 1}, {hb.size.x, 1});
+#else
 		return FloatRect(hb.left, hb.top + hb.height - 1, hb.width, 1);
+#endif
 	}
 		
 		/* based on hitBox(), since collision checking is
@@ -161,6 +199,9 @@ public:
 		 */
 	bool rotatedContains (float x, float y)
 	{
+#ifdef SFML_3
+		return false;
+#else
 		vecf pt {x, y};
 		float oldRot = getRotation();
 			/*
@@ -184,11 +225,15 @@ public:
 		setRotation(oldRot);
 		
 		return _rotatedContainsCommon(rect, pt, oldRot);
+#endif
 	}
 	
 	
 	bool rotatedGContains (float x, float y)
 	{
+#ifdef SFML_3
+		return false;
+#else
 		vecf pt {x, y};
 		float oldRot = getRotation();
 			/*
@@ -212,11 +257,15 @@ public:
 		setRotation(oldRot);
 		
 		return _rotatedContainsCommon(rect, pt, oldRot);
+#endif
 	}
 	
 private:
 	bool _rotatedContainsCommon (FloatRect rect, vecf pt, float oldRot) const
 	{
+#ifdef SFML_3
+		return false;
+#else
 		vecf 	topL { rect.left, rect.top },
 				topR { rect.left + rect.width, rect.top },
 				botR { rect.left + rect.width, rect.top + rect.height },
@@ -262,6 +311,7 @@ private:
 					leftSide.xIsGreaterThan(pt)
 			;
 		}
+#endif
 	}
 
 //============================================================================//
@@ -285,8 +335,11 @@ public:
 	{
 		s.setColor(c);
 	}
-	
+#ifdef SFML_3
+	virtual const Texture& getTexture () const
+#else
 	virtual const Texture* getTexture () const
+#endif
 	{
 		return s.getTexture();
 	}
@@ -295,8 +348,11 @@ public:
 	{
 		return s.getTextureRect();
 	}
-	
+#ifdef SFML_3
+	virtual Color getColor () const
+#else
 	virtual const Color& getColor () const
+#endif
 	{
 		return s.getColor();
 	}
@@ -313,7 +369,7 @@ public:
 	
 	virtual void setPosition (float x, float y)
 	{
-		s.setPosition(x, y);
+		s.setPosition({x, y});
 	}
 	
 	virtual void setPosition (const Vector2f& pos)
@@ -326,12 +382,16 @@ public:
 	
 	virtual void setRotation (float ang)
 	{
+#ifdef SFML_3
+		s.setRotation(degrees(ang));
+#else
 		s.setRotation(ang);
+#endif
 	}
 	
 	virtual void setScale (float x, float y)
 	{
-		s.setScale(x, y);
+		s.setScale({x, y});
 	}
 	
 	virtual void setScale (const Vector2f& factors)
@@ -341,52 +401,69 @@ public:
 	
 	virtual void setOrigin (float x, float y)
 	{
-		s.setOrigin(x, y);
+		s.setOrigin({x, y});
 	}
 	
 	virtual void setOrigin (const Vector2f ogn)
 	{
 		s.setOrigin(ogn);
 	}
-	
+#ifdef SFML_3
+	virtual Vector2f getPosition () const
+#else
 	virtual const Vector2f& getPosition () const
+#endif
 	{
 		return s.getPosition();
 	}
-	
+#ifdef SFML_3
+	virtual Angle getRotation () const
+#else
 	virtual float getRotation () const
+#endif
 	{
 		return s.getRotation();
 	}
-	
+#ifdef SFML_3
+	virtual Vector2f getScale () const
+#else
 	virtual const Vector2f& getScale () const
+#endif
 	{
 		return s.getScale();
 	}
-	
+#ifdef SFML_3
+	virtual Vector2f getOrigin () const
+#else
 	virtual const Vector2f& getOrigin () const
+#endif
 	{
 		return s.getOrigin();
 	}
 	
 	virtual void move (float x, float y)
 	{
-		s.move(x, y);
+		s.move({x, y});
 	}
 	
 	virtual void move (const Vector2f& ofs)
 	{
 		s.move(ofs);
 	}
+#ifdef SFML_3
+	virtual void rotate (float ang) { s.rotate(degrees(ang)); }
 	
+	virtual void rotate (Angle ang) { s.rotate(ang); }
+#else
 	virtual void rotate (float ang)
 	{
 		s.rotate(ang);
 	}
+#endif
 	
 	virtual void scale (float x, float y)
 	{
-		s.scale(x, y);
+		s.scale({x, y});
 	}
 	
 	virtual void scale (const Vector2f& factors)
@@ -405,7 +482,7 @@ public:
 	}
 
 	
-	Sprite 	s;
+	Sprite 			s;
 	float			hbofs_ = 0;
 	unsigned int    id = 0;
 	bool    		clickedOn = false;
@@ -428,7 +505,27 @@ inline void initSprite (ZSprite& spr, const Texture& tx, const vecF& pos, bool c
 		centerOrigin(spr);
 	spr.setPosition(pos);
 }
+#ifdef SFML_3
+inline bool hitL (ZSprite& z, FloatRect& isct)
+{
+	return isOrBetween(z.left(), isct.position.x, isct.position.x + isct.size.x - 1);
+}
 
+inline bool hitR (ZSprite& z, FloatRect& isct)
+{
+	return isOrBetween(z.right(), isct.position.x, isct.position.x + isct.size.x - 1);
+}
+
+inline bool hitTop (ZSprite& z, FloatRect& isct)
+{
+	return isOrBetween(z.top(), isct.position.y, isct.position.y + isct.size.y - 1);
+}
+
+inline bool hitBot (ZSprite& z, FloatRect& isct)
+{
+	return isOrBetween(z.bottom(), isct.position.y, isct.position.y + isct.size.y - 1);
+}
+#else
 inline bool hitL (ZSprite& z, FloatRect& isct)
 {
 	return isOrBetween(z.left(), isct.left, isct.left + isct.width - 1);
@@ -448,7 +545,7 @@ inline bool hitBot (ZSprite& z, FloatRect& isct)
 {
 	return isOrBetween(z.bottom(), isct.top, isct.top + isct.height - 1);
 }
-
+#endif
 inline bool hitTopL (ZSprite& z, FloatRect& isct)
 {
 	return hitTop(z, isct) && hitL(z, isct);

@@ -53,6 +53,9 @@ using std::erase_if;
 
 using std::string;
 using std::vector;
+using std::array;
+using std::list;
+using std::deque;
 using std::pair;
 using std::tuple;
 using std::unordered_map;
@@ -1060,7 +1063,7 @@ vector<T>& splice(vector<T>& v, int startIdx, int deleteCt, const std::initializ
 	}
 	if (startIdx < 0
 		|| startIdx > v.size()
-		|| deleteCt && startIdx + deleteCt > v.size())
+		|| (deleteCt && startIdx + deleteCt > v.size()))
 		return v;	// Abort if bad values passed
 	auto itr = v.begin() + startIdx;
 	if (deleteCt)
@@ -1167,7 +1170,7 @@ inline string& splice(string& str, int startIdx, int deleteCt, const string& ins
 	}
 	if (startIdx < 0
 		|| startIdx > str.length()
-		|| deleteCt && startIdx + deleteCt > str.length())
+		|| (deleteCt && startIdx + deleteCt > str.length()))
 		return str;	// Abort if bad values passed
 	auto itr = str.begin() + startIdx;
 	if (deleteCt)

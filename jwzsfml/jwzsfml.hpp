@@ -1310,10 +1310,10 @@ struct LineSegment : public Line
 	bool isOverlappingCollinearWith (const LineSegment& other, LineSegment* overlapping=nullptr, float eps=floatEps) const
 	{
 		bool ret = (isCollinearWith(other.line, eps)
-					&& (epsLTE(miny, other.miny) && maxy > other.miny
-						|| epsGTE(maxy, other.maxy) && miny < other.maxy
-						|| epsLTE(minx, other.minx) && maxx > other.minx
-						|| epsGTE(maxx, other.maxx) && minx < other.maxx));
+					&& ((epsLTE(miny, other.miny) && maxy > other.miny)
+						|| (epsGTE(maxy, other.maxy) && miny < other.maxy)
+						|| (epsLTE(minx, other.minx) && maxx > other.minx)
+						|| (epsGTE(maxx, other.maxx) && minx < other.maxx)));
 		if (overlapping) {
 			if (isHorizontal() || abs(slope) <= 1) {
 				auto x1 = max(minx, other.minx);
@@ -2969,6 +2969,18 @@ inline Color withAlpha (const Color& c, int a)
 	return col;
 }
 
+/* c1 is "start color"; c2 is "end color"; pct is 0 to 1 val of transition */
+inline Color colorMorph (const Color& c1, const Color& c2, float pct)
+{
+	float r1 = c1.r, g1 = c1.g, b1 = c1.b, a1 = c1.a;
+	return Color(
+				 r1 + pct * (float(c2.r) - r1),
+				 g1 + pct * (float(c2.g) - g1),
+				 b1 + pct * (float(c2.b) - b1),
+				 a1 + pct * (float(c2.a) - a1)
+				 );
+}
+
 
 #define ORANGE Color(255, 127, 0)
 #define ORANGE75 Color(255, 159, 63)
@@ -2999,6 +3011,9 @@ inline Color withAlpha (const Color& c, int a)
 #define BUTTERSKY Color(255, 255, 150)
 #define CHARCOAL Color(20, 20, 24)
 #define CAPPUCCINO Color(78, 50, 2)
+#define GRAY60 Color(154, 154, 154)
+#define GRAY75 Color(191, 191, 191)
+#define GRAY85 Color(217, 217, 217)
 #define MUTEDGRASS Color(170, 215, 143)
 #define GRASSGREEN Color(65, 155, 63)
 #define OLIVEGREEN Color(141, 160, 94)

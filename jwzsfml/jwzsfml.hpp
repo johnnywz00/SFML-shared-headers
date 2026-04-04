@@ -3027,15 +3027,15 @@ inline Color colorMorph (const Color& c1, const Color& c2, float pct)
 inline void playSoundOnce (const string& file)
 {
 #ifdef SFML_3
-//	SoundBuffer sb {"resources/sounds/" + file};
-//	Sound snd {sb};
+	SoundBuffer sb {"resources/sounds/" + file};
+	Sound snd {sb};
 #else
 	SoundBuffer sb;
 	sb.loadFromFile("resources/sounds/" + file);
 	Sound snd;
 	snd.setBuffer(sb);
 #endif
-//	snd.play();
+	snd.play();
 }
 
 inline void playSoundAtVolPct (Sound& snd, float pct)

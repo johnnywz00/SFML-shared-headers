@@ -122,6 +122,8 @@ using std::getline;
 using std::ios_base;
 using std::stoi;
 using std::stof;
+using std::smatch;
+using std::regex;
 
 using std::sort;
 using std::find;
@@ -310,7 +312,7 @@ inline void dp (vector<string>& v, bool nl=true, string pfx = "")
 		if (i < v.size() - 1)
 			cout << ", ";
 	}
-   cout << "}";
+	cout << "}";
 	if (nl) cout << endl;
 }
 
@@ -370,6 +372,27 @@ inline string ptrStr (void* ptr)
 {
 	ostringstream ss;
 	ss << std::hex << ptr;
+	return ss.str();
+}
+
+inline string smatchStr (const smatch& sm, const string& id="smatch")
+{
+	if (!sm.ready())
+		return id + " not ready.\n";
+//	else if (sm.size() == 0)
+//		return id + " has no size.\n";
+	ostringstream ss;
+	ss << "\t" << id << " {\nSize: " << sm.size() << "\nPrefix:~" << sm.prefix()
+	<< "~\nSuffix:~" << sm.suffix() << "~\n";
+	for (size_t i = 0; i < sm.size(); ++i) {
+		ss << '[' << i << "]: ";
+		if (sm[i].matched) {
+			ss << "Y : " << sm.position(i) << " : " << sm.length(i)
+			<< " :~" << sm.str(i) << "~\n";
+		}
+		else ss << "N\n";
+	}
+	ss << "}" << endl;
 	return ss.str();
 }
 

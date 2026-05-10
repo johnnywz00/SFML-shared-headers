@@ -71,8 +71,9 @@ public:
 	//isPlayingAnimation
 };
 
-using AnimatablePtr = std::shared_ptr<Animatable>;
-using AnimatableWkPtr = std::weak_ptr<Animatable>;
+using AnimatablePtr = unique_ptr<Animatable>;
+//using AnimatablePtr = std::shared_ptr<Animatable>;
+//using AnimatableWkPtr = std::weak_ptr<Animatable>;
 
 
 
@@ -81,20 +82,34 @@ class AnimatableSprite: public Animatable
 {
 public:
 	AnimatableSprite ()
+		: spr(make_unique<ZSprite>(Texture()))
 	{
-		ent = &(spr.s);
+		ent = &(spr->s);
 	}
 	
-	void setColor (const Color& c) override { spr.setColor(c); }
+	AnimatableSprite (const Texture& tex)
+		: spr(make_unique<ZSprite>(tex))
+	{
+		ent = &(spr->s);
+	}
 	
-	void setTexture (const Texture& tex) override { spr.setTexture(tex); }
+	AnimatableSprite (ZSprite& zspr)
+		: spr(&zspr)
+	{
+		ent = &(spr->s);
+	}
+	
+	void setColor (const Color& c) override { spr->setColor(c); }
+	
+	void setTexture (const Texture& tex) override { spr->setTexture(tex); }
 	
 	void setTextureRect (const IntRect& rect) override
 	{
-		spr.setTextureRect(rect);
+		spr->setTextureRect(rect);
 	}
 	
-	ZSprite		spr {Texture()};
+	Pointer<ZSprite>	spr;
+//	ZSprite		spr {Texture()};
 };
 
 
@@ -103,23 +118,24 @@ class AnimatableShape: public Animatable
 {
 public:
 	AnimatableShape ()
+		: shape(make_unique<T>())
 	{
-		ent = &(shape);
+		ent = shape.get();
 	}
 	
-	void setColor (const Color& c) override { shape.setFillColor(c); }
+	void setColor (const Color& c) override { shape->setFillColor(c); }
 
 	virtual void setOutlineThickness (float thk) override
 	{
-		shape.setOutlineThickness(thk);
+		shape->setOutlineThickness(thk);
 	}
 	
 	virtual void setOutlineColor (const Color& c) override
 	{
-		shape.setOutlineColor(c);
+		shape->setOutlineColor(c);
 	}
 	
-	T			shape;
+	Pointer<T>			shape;
 };
 
 
@@ -128,75 +144,29 @@ class AnimatableText: public Animatable
 {
 public:
 	AnimatableText ()
+		: txt(make_unique<Text>(
 #ifdef SFML_3
-		: txt(Resources::getDefaultFont())
+			  Resources::getDefaultFont()
 #endif
+								))
 	{
-		ent = &(txt);
+		ent = txt.get();
 	}
 	
-	void setColor (const Color& c) override { txt.setFillColor(c); }
+	void setColor (const Color& c) override { txt->setFillColor(c); }
 
 	
 	virtual void setOutlineThickness (float thk) override
 	{
-		txt.setOutlineThickness(thk);
+		txt->setOutlineThickness(thk);
 	}
 	
 	virtual void setOutlineColor (const Color& c) override
 	{
-		txt.setOutlineColor(c);
+		txt->setOutlineColor(c);
 	}
 	
-	Text		txt;
-};
-
-
-
-struct EasingPattern
-{
-	virtual float operator() (float prog) = 0;
-	
-	float			duration;
-};
-// wave-shaped, accelerating
-
-
-//struct SteadyEasing: public EasingPattern
-//{
-//	float operator() (float prog) { return prog; }
-//};
-
-
-
-struct SineEaseInOut: public EasingPattern
-{
-	//RECONFIG HOW easepattern gets assigned/constructed so duration doesn't have to be mentioned twice in an Animation declaration
-	SineEaseInOut (float dur, float steadyRatio=0)
-	{
-		duration = dur;
-		radius = duration / (pi + max(steadyRatio, 0.f));
-		steadyLength = steadyRatio * radius;
-		apparentLength = steadyLength + 2 * radius;
-		sineZone = radius * pi * .5;
-	}
-	
-	float operator() (float prog)
-	{
-		auto elapsed = prog * duration;
-		float apparentXlat;
-		if (elapsed < sineZone)
-			apparentXlat = radius - (abs(cos(elapsed / radius)) * radius);
-		else if (elapsed < duration - sineZone)
-			apparentXlat = elapsed - sineZone + radius;
-		else apparentXlat = radius + steadyLength + (abs(sin((elapsed - sineZone - steadyLength) / radius)) * radius);
-		return apparentXlat / apparentLength;
-	}
-	
-	float 		radius;
-	float		apparentLength;
-	float		steadyLength;
-	float		sineZone;
+	Pointer<Text>		txt;
 };
 
 
@@ -213,7 +183,7 @@ public:
 		if (elapsedWhileActive >= totalDuration) {
 			if (!looping) {
 				elapsedWhileActive = totalDuration;
-				setProgress();
+				computeProgress();
 				applyProgress();
 				endAndReset();
 				return;
@@ -224,7 +194,7 @@ public:
 			}
 		}
 		lastActiveTime = t;
-		setProgress();
+		computeProgress();
 		applyProgress();
 	}
 
@@ -239,7 +209,7 @@ public:
 	{
 		isPlaying_ = false;
 		elapsedWhileActive = Time::Zero;
-		setProgress(); //prob redundant: will always be called in update before read from
+		computeProgress(); //prob redundant: will always be called in update before read from
 		//notifyMyObj(tag, "end");
 		//lastActiveTime can float, will be reset on next play()?
 		// need to know what state to transition to, or the Animatable handles?
@@ -247,11 +217,9 @@ public:
 	
 	virtual void setDuration (float secs)
 	{
+		// `progress` is meant to stay the same
 		elapsedWhileActive = seconds(progress * secs);
 		totalDuration = seconds(secs);
-		if (easePattern)
-			(*(*easePattern)).duration = secs;
-		// `progress` is meant to stay the same
 	}
 
 	void pauseAnimation ()
@@ -274,54 +242,29 @@ public:
 	
 	//reverse
 
-	AnimatablePtr			myObj;
+	Animatable*				myObj;
+//	AnimatablePtr			myObj;
 	string					tag; // unnec if stored in map?
 	Time					lastActiveTime;
 	Time					elapsedWhileActive;
 	Time 					totalDuration;
 	float					progress;
-	optional<shared_ptr<EasingPattern>>
-							easePattern;
 	bool					looping = false;
 	bool					isPlaying_ = false;
 	
 protected:
-	void setProgress ()
+	void computeProgress ()
 	{
 		auto val = elapsedWhileActive / totalDuration;
+		val = maybeRunEasing(val);
 		if (epsEquals(val, 1, .005)) //MAYBE NOT NCSSY, update could handle
-			progress = 1;
-		else if (easePattern)
-			progress = (*(*easePattern))(val);
-		else progress = val;
+			val = 1;
+		progress = val;
 	}
 	
+	virtual float maybeRunEasing (float prog) { return prog; }
+
 	virtual void applyProgress () { }
-	
-};
-
-
-
-class ValueAnimation: public Animation
-{
-public:
-	
-};
-
-
-
-class ColorAnimation: public ValueAnimation
-{
-public:
-	
-};
-
-
-
-class XformAnimation: public ValueAnimation
-{
-public:
-	virtual ~XformAnimation () = default;
 	
 };
 
@@ -329,30 +272,31 @@ public:
 
 
 // MAKE VALUEANIMATION START/DEST visible to these somehow, rather than store copies?
+template<typename ValType>
 struct PathFunc
 {
 	virtual ~PathFunc () = default;
 	
-	virtual vecF operator() (float prog) = 0;
+	virtual ValType operator() (float prog) = 0;
 	
-	virtual void reset (const vecF& st, const vecF& dest)
+	virtual void reset (const ValType& st, const ValType& dest)
 	{
 		startPt = st;
 		destPt = dest;
 	}
 	
-	vecF		startPt;
-	vecF		destPt;
+	ValType		startPt;
+	ValType		destPt;
 };
 //path to dest: swirl, zag, point trail
 
 
-// PASS AN ADJUSTED PROGRESS VALUE THAT'S ALREADY BEEN THROUGH SPEEDPATH?
-struct StraightPath: public PathFunc
+
+struct StraightPath: public PathFunc<vecF>
 {
-	StraightPath ()
-	{
-	}
+//	StraightPath ()
+//		: PathFunc()
+//	{}
 	
 	vecF operator() (float prog) override
 	{
@@ -409,7 +353,7 @@ struct WavePathFreq: public WavePath
 struct WavePathFixedPds: public WavePath
 {
 	WavePathFixedPds (int pds, float ampl)
-		: WavePath(ampl)
+	: WavePath(ampl)
 	{
 		periods = max(pds, 1);
 		periodLength = hyp(difVec) / periods;
@@ -417,7 +361,7 @@ struct WavePathFixedPds: public WavePath
 };
 
 
-struct ArcPath: public PathFunc
+struct ArcPath: public PathFunc<vecF>
 {
 	ArcPath ()
 	{
@@ -426,6 +370,7 @@ struct ArcPath: public PathFunc
 	
 	vecF operator() (float prog) override
 	{
+		return arcCenter;////////
 	}
 	
 	vecF		arcCenter;
@@ -435,7 +380,105 @@ struct ArcPath: public PathFunc
 //fixed mid displacement; fixed radius (must be greater than .5 of beeline)
 
 
-class XlatAnimation: public XformAnimation
+
+struct EasingPattern
+{
+	virtual float operator() (float prog) = 0;
+	
+	float			duration;
+};
+// wave-shaped, accelerating
+
+
+struct SteadyEasing: public EasingPattern
+{
+	float operator() (float prog) override { return prog; }
+};
+
+
+
+struct SineEaseInOut: public EasingPattern
+{
+	//RECONFIG HOW easepattern gets assigned/constructed so duration doesn't have to be mentioned twice in an Animation declaration
+	SineEaseInOut (float dur, float steadyRatio=0)
+	{
+		duration = dur;
+		radius = duration / (pi + max(steadyRatio, 0.f));
+		steadyLength = steadyRatio * radius;
+		apparentLength = steadyLength + 2 * radius;
+		sineZone = radius * pi * .5;
+	}
+	
+	float operator() (float prog)
+	{
+		auto elapsed = prog * duration;
+		float apparentXlat;
+		if (elapsed < sineZone)
+			apparentXlat = radius - (abs(cos(elapsed / radius)) * radius);
+		else if (elapsed < duration - sineZone)
+			apparentXlat = elapsed - sineZone + radius;
+		else apparentXlat = radius + steadyLength + (abs(sin((elapsed - sineZone - steadyLength) / radius)) * radius);
+		return apparentXlat / apparentLength;
+	}
+	
+	float 		radius;
+	float		apparentLength;
+	float		steadyLength;
+	float		sineZone;
+};
+
+
+
+template<typename ValType>
+class ValueAnimation: public Animation
+{
+public:
+	ValType					startVal;
+	ValType					destVal;
+	EasingPattern*			easePattern = nullptr;
+	PathFunc<ValType>*		pathFunc = nullptr;
+	
+	float maybeRunEasing (float prog) override
+	{
+		if (easePattern)
+			prog = (*easePattern)(prog);
+		return prog;
+	}
+	
+	void setDuration (float secs) override
+	{
+		elapsedWhileActive = seconds(progress * secs);
+		totalDuration = seconds(secs);
+		if (easePattern)
+			easePattern->duration = secs;
+	}
+
+};
+
+
+
+class ColorAnimation: public ValueAnimation<Color>
+{
+public:
+	void applyProgress () override
+	{
+//		myObj->setColor((*pathFunc)(progress));   /////////
+	}
+};
+
+
+template<typename ValType>
+class XformAnimation: public ValueAnimation<ValType>
+{
+public:
+	virtual ~XformAnimation () = default;
+	
+};
+
+
+
+
+class XlatAnimation: public XformAnimation<vecF>
 {
 public:
 	void play (const Time& t) override
@@ -455,7 +498,7 @@ public:
 	optional<float>					speed;
 	
 	vecF							startPt;
-	shared_ptr<PathFunc>			pathFunc {make_shared<StraightPath>()};
+	unique_ptr<PathFunc<vecF>>		pathFunc {make_unique<StraightPath>()};
 	
 protected:
 	void applyProgress () override
@@ -496,18 +539,24 @@ public:
 
 
 
-class RotationAnimation: public XformAnimation
+class RotationAnimation: public XformAnimation<float>
 {
 public:
-	
+	void applyProgress () override
+	{
+//		myObj->setRotation((*pathFunc)(progress));/////
+	}
 };
 
 
 
-class ScaleAnimation: public XformAnimation
+class ScaleAnimation: public XformAnimation<vecF>
 {
 public:
-	
+	void applyProgress () override
+	{
+//		myObj->setScale((*pathFunc)(progress)); /////////
+	}
 };
 
 
@@ -515,6 +564,7 @@ public:
 class ComboAnimation
 {
 public:
+	// will these take subclasses
 	optional<XlatAnimation>			xlatAnim;
 	optional<RotationAnimation>		rotateAnim;
 	optional<ScaleAnimation>		scaleAnim;
@@ -564,7 +614,7 @@ public:
 			}
 		}
 		lastActiveTime = t;
-		setProgress();
+		computeProgress();
 		int iterCt = 1;
 		for (auto idx = curIdx; idx < frames.size(); ++idx, ++iterCt) {
 			if (progress < frames[idx].nmzdEnd

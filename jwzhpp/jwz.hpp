@@ -1420,4 +1420,6 @@ private:
 
 } // end namespace jwz
 
+using jwz::Pointer;
+
 #endif  /* jwz_hpp */
